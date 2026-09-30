@@ -167,7 +167,7 @@
                 </div>
 
                 <div class="sm:col-span-3">
-                    <input type="text" id="tx-note" placeholder="備註 (如：午餐便當)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs">
+                    <input type="text" id="tx-note" placeholder="備註 (留空預設為分類)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs">
                 </div>
 
                 <div class="sm:col-span-2">
@@ -375,14 +375,14 @@
                     </div>
                     <ul class="list-disc list-inside space-y-1 text-[11px] text-rose-800 font-medium">
                         <li><strong>捷徑用錯動作：</strong> 請選擇「開啟 URL」，**不能選擇**「取得 URL 內容」(背景抓取無法執行 JavaScript)。</li>
-                        <li><strong>主畫面 App 隔離：</strong> 如果把網址加到主畫面圖示，iOS 會將它隔離。捷徑會在 Safari 開啟，請用 Safari 開啟網頁看紀錄！</li>
+                        <li><strong>主畫面 App 隔離：</strong> 如果把網頁加到主畫面圖示，iOS 會將它隔離。捷徑會在 Safari 開啟，請用 Safari 開啟網頁看紀錄！</li>
                     </ul>
                 </div>
 
                 <div class="space-y-1.5">
                     <div class="font-bold text-slate-800 text-[11px]">正解捷徑網址格式 (複製到捷徑「開啟 URL」)：</div>
                     <div class="bg-slate-900 text-emerald-400 p-2.5 rounded-xl font-mono text-[10px] break-all select-all">
-                        https://how-7719.github.io/my-budget-app/?amount=120&category=food&note=便當
+                        https://how-7719.github.io/my-budget-app/?amount=120&category=food
                     </div>
                 </div>
 
@@ -491,7 +491,10 @@
                     const rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c') || '餐飲外食';
                     const qCategory = CATEGORY_MAP[rawCat] || CATEGORY_MAP[rawCat.toLowerCase()] || rawCat || '餐飲外食';
                     
-                    const rawNote = urlParams.get('note') || urlParams.get('n') || 'iOS 捷徑快記';
+                    // Note logic: If custom note provided, use it; otherwise, default to category name!
+                    const rawNote = urlParams.get('note') || urlParams.get('n');
+                    const finalNote = (rawNote && rawNote.trim() !== '') ? rawNote.trim() : qCategory;
+
                     const qType = urlParams.get('type') || 'daily';
                     const qDate = urlParams.get('date') || getTodayString();
 
@@ -501,7 +504,7 @@
                         category: qCategory,
                         date: qDate,
                         type: qType,
-                        note: rawNote
+                        note: finalNote
                     });
 
                     setSafeLocalStorage('budget_tracker_state', state);
@@ -528,7 +531,7 @@
                 category: qCategory,
                 date: getTodayString(),
                 type: 'daily',
-                note: '測試快捷便當'
+                note: qCategory
             });
 
             saveState();
@@ -729,10 +732,13 @@
             const amount = Number(document.getElementById('tx-amount').value);
             const category = document.getElementById('tx-category').value;
             const type = document.getElementById('tx-type').value;
-            const note = document.getElementById('tx-note').value;
+            const inputNote = document.getElementById('tx-note').value;
             const date = document.getElementById('tx-date').value || getTodayString();
 
             if (!amount || amount <= 0) return;
+
+            // Default note to category if input is empty
+            const note = (inputNote && inputNote.trim() !== '') ? inputNote.trim() : category;
 
             state.transactions.unshift({
                 id: Date.now(),
@@ -740,7 +746,7 @@
                 category,
                 date,
                 type,
-                note: note || category
+                note
             });
 
             saveState();
