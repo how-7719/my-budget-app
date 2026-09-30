@@ -140,24 +140,27 @@
             <form id="add-transaction-form" onsubmit="handleAddTransaction(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                 <input type="hidden" id="tx-type" value="daily">
 
+                <!-- Editable Date Selection -->
                 <div class="sm:col-span-3">
+                    <input type="date" id="tx-date" required class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-semibold text-slate-700 bg-white">
+                </div>
+
+                <div class="sm:col-span-2">
                     <input type="number" id="tx-amount" required min="1" placeholder="金額 NT$" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold">
                 </div>
 
-                <div class="sm:col-span-3">
-                    <select id="tx-category" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm text-slate-700 bg-white font-medium">
+                <div class="sm:col-span-2">
+                    <select id="tx-category" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs text-slate-700 bg-white font-medium">
                         <!-- Options injected dynamically -->
                     </select>
                 </div>
 
-                <div class="sm:col-span-4">
-                    <input type="text" id="tx-note" placeholder="備註 (如：午餐便當)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm">
+                <div class="sm:col-span-3">
+                    <input type="text" id="tx-note" placeholder="備註 (如：午餐便當)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs">
                 </div>
 
-                <input type="hidden" id="tx-date">
-
                 <div class="sm:col-span-2">
-                    <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition shadow-xs flex items-center justify-center gap-1">
+                    <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition shadow-xs flex items-center justify-center gap-1">
                         <i class="fa-solid fa-plus text-xs"></i> 記錄
                     </button>
                 </div>
@@ -167,15 +170,29 @@
         <!-- Content Split: Transaction Table & Overview Chart -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             
-            <!-- Left: Transaction History List -->
+            <!-- Left: Transaction History List with Month Filter -->
             <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
-                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <h3 class="font-bold text-sm text-slate-800">消費明細紀錄</h3>
-                    <select id="filter-type" onchange="renderTransactions()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white focus:outline-none">
-                        <option value="all">全部類型</option>
-                        <option value="daily">僅日常變動</option>
-                        <option value="fixed">僅固定扣款</option>
-                    </select>
+                <div class="flex flex-wrap items-center justify-between pb-2 border-b border-slate-100 gap-2">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-bold text-sm text-slate-800">消費明細紀錄</h3>
+                        <span id="current-cycle-badge" class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-semibold">
+                            當前週期
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <!-- Filter Month/Cycle -->
+                        <select id="filter-month" onchange="renderTransactions()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white focus:outline-none font-medium">
+                            <!-- Populated dynamically -->
+                        </select>
+
+                        <!-- Filter Type -->
+                        <select id="filter-type" onchange="renderTransactions()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white focus:outline-none font-medium">
+                            <option value="all">全部類型</option>
+                            <option value="daily">僅日常變動</option>
+                            <option value="fixed">僅固定扣款</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -238,8 +255,8 @@
         <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
                 <div>
-                    <h3 class="font-bold text-slate-800 text-sm">財務設定：每月收入與固定開銷</h3>
-                    <p class="text-[10px] text-slate-400 mt-0.5">自訂你的每月收入、固定扣款項目與儲蓄目標</p>
+                    <h3 class="font-bold text-slate-800 text-sm">財務設定：每月收入與起算週期</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">自訂每月收入、發薪重置日、固定扣款與投資目標</p>
                 </div>
                 <button onclick="toggleSettingsModal()" class="text-slate-400 hover:text-slate-600">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -254,6 +271,19 @@
                         <span class="text-[10px] font-normal text-indigo-600">主要資金來源</span>
                     </label>
                     <input type="number" id="setting-income" required min="0" placeholder="例如：25000" class="w-full px-3 py-2 bg-white rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-base text-indigo-700">
+                </div>
+
+                <!-- Billing Cycle Reset Day -->
+                <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-100/80 space-y-1">
+                    <label class="block font-bold text-amber-900 mb-1 flex items-center justify-between">
+                        <span>📅 每月記帳起算日 (發薪/重置日)</span>
+                        <span class="text-[10px] font-normal text-amber-700">每月固定幾號重新算</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-600 font-semibold">每月</span>
+                        <input type="number" id="setting-cycle-start" required min="1" max="31" placeholder="1" class="w-20 px-3 py-1.5 bg-white rounded-xl border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-bold text-sm text-amber-800 text-center">
+                        <span class="text-slate-600 font-semibold">號開始新一期預算</span>
+                    </div>
                 </div>
 
                 <!-- Fixed Expenses List Management -->
@@ -291,7 +321,7 @@
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">📅 當月計算天數</label>
+                    <label class="block font-semibold text-slate-700 mb-1">📅 當月預算分配天數</label>
                     <input type="number" id="setting-days" required min="28" max="31" class="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium">
                 </div>
 
@@ -316,17 +346,17 @@
             </div>
 
             <div class="space-y-3 text-xs text-slate-600">
-                <p class="font-medium">系統已支援 URL 參數自動記帳，iOS 捷徑可直接呼叫網址記帳：</p>
+                <p class="font-medium">系統支援 URL 參數自動記帳，包含自訂日期與類別：</p>
                 
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 font-mono text-[11px] text-indigo-700 break-all">
-                    https://how-7719.github.io/my-budget-app/?amount=120&category=餐飲外食&note=午餐
+                    https://how-7719.github.io/my-budget-app/?amount=120&category=餐飲外食&note=午餐&date=2026-09-30
                 </div>
 
                 <ol class="list-decimal list-inside space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
                     <li>開啟 iOS <strong>「捷徑 App」</strong> 並新建捷徑。</li>
                     <li>新增動作 <strong>「要求輸入」</strong>（提示：金額，類型：數字）。</li>
                     <li>新增動作 <strong>「從選單中選擇」</strong>（選擇：餐飲外食、交通、娛樂）。</li>
-                    <li>新增動作 <strong>「開啟 URL」</strong>，帶入上面格式的網址。</li>
+                    <li>新增動作 <strong>「開啟 URL」</strong> 帶入上面的自動記帳網址。</li>
                     <li>前往 <strong>設定 > 輔助使用 > 觸控 > 輕點背面</strong> 綁定即可！</li>
                 </ol>
             </div>
@@ -340,6 +370,7 @@
     <script>
         const DEFAULT_STATE = {
             income: 25000,
+            cycleStartDay: 1, // Start day of billing cycle (1-31)
             fixedExpenses: [
                 { id: 1, name: '宿舍/租金', amount: 7000, category: '住房' },
                 { id: 2, name: '水電瓦斯網路', amount: 1000, category: '帳單' },
@@ -349,7 +380,6 @@
             savingsTarget: 2000,
             investmentTarget: 4000,
             daysInMonth: 30,
-            streakDays: 3,
             transactions: [
                 { id: 101, date: getTodayString(), amount: 110, category: '餐飲外食', type: 'daily', note: '午餐排骨飯' },
                 { id: 102, date: getTodayString(), amount: 60, category: '飲料零食', type: 'daily', note: '拿鐵咖啡' },
@@ -358,6 +388,8 @@
         };
 
         let state = JSON.parse(localStorage.getItem('budget_tracker_state')) || DEFAULT_STATE;
+        if (!state.cycleStartDay) state.cycleStartDay = 1; // Fallback for existing users
+
         let tempFixedExpenses = [];
         let budgetChart = null;
 
@@ -376,12 +408,48 @@
             renderAll();
         };
 
+        function getTodayString() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        // Get start and end date string of current billing cycle
+        function getCurrentCycleRange() {
+            const today = new Date();
+            const startDay = Math.min(Math.max(1, state.cycleStartDay || 1), 28); // Cap at 28 to be safe across months
+            
+            let currentYear = today.getFullYear();
+            let currentMonth = today.getMonth(); // 0-indexed
+            
+            let startDate, endDate;
+
+            if (today.getDate() >= startDay) {
+                startDate = new Date(currentYear, currentMonth, startDay);
+                endDate = new Date(currentYear, currentMonth + 1, startDay - 1);
+            } else {
+                startDate = new Date(currentYear, currentMonth - 1, startDay);
+                endDate = new Date(currentYear, currentMonth, startDay - 1);
+            }
+
+            return {
+                startStr: formatDateStr(startDate),
+                endStr: formatDateStr(endDate)
+            };
+        }
+
+        function formatDateStr(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         function checkAndHandleUrlParameters() {
             const urlParams = new URLSearchParams(window.location.search);
             const qAmount = urlParams.get('amount');
             const qCategory = urlParams.get('category');
             const qNote = urlParams.get('note');
             const qType = urlParams.get('type') || 'daily';
+            const qDate = urlParams.get('date') || getTodayString();
 
             if (qAmount) {
                 const numAmount = Number(qAmount);
@@ -390,7 +458,7 @@
                         id: Date.now(),
                         amount: numAmount,
                         category: qCategory || '餐飲外食',
-                        date: getTodayString(),
+                        date: qDate,
                         type: qType,
                         note: qNote || qCategory || 'iOS 捷徑快記'
                     });
@@ -405,26 +473,26 @@
             renderAll();
         }
 
-        function getTodayString() {
-            return new Date().toISOString().split('T')[0];
-        }
-
         function calculateBudgetMetrics() {
             const totalFixedBudget = state.fixedExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
             const totalDailyPool = Math.max(0, state.income - totalFixedBudget - state.savingsTarget - state.investmentTarget);
             const baseDailyBudget = Math.round(totalDailyPool / state.daysInMonth);
 
             const todayStr = getTodayString();
+            const cycleRange = getCurrentCycleRange();
+
+            // Today's daily spending
             const todayDailySpent = state.transactions
                 .filter(t => t.date === todayStr && t.type === 'daily')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
 
-            const totalDailySpentMonth = state.transactions
-                .filter(t => t.type === 'daily')
+            // Current Billing Cycle daily spending
+            const cycleDailySpent = state.transactions
+                .filter(t => t.type === 'daily' && t.date >= cycleRange.startStr && t.date <= cycleRange.endStr)
                 .reduce((sum, t) => sum + Number(t.amount), 0);
 
             const todayRemaining = baseDailyBudget - todayDailySpent;
-            const projectedInvestment = Math.max(0, state.income - totalFixedBudget - state.savingsTarget - totalDailySpentMonth);
+            const projectedInvestment = Math.max(0, state.income - totalFixedBudget - state.savingsTarget - cycleDailySpent);
 
             return {
                 totalFixedBudget,
@@ -433,7 +501,8 @@
                 todayDailySpent,
                 todayRemaining,
                 projectedInvestment,
-                totalDailySpentMonth
+                cycleDailySpent,
+                cycleRange
             };
         }
 
@@ -484,6 +553,7 @@
             document.getElementById('summary-daily-total').innerText = `NT$ ${metrics.totalDailyPool.toLocaleString()}`;
             document.getElementById('summary-savings').innerText = `NT$ ${(state.savingsTarget + state.investmentTarget).toLocaleString()}`;
 
+            populateMonthFilterOptions();
             renderTransactions();
             renderChart(metrics);
         }
@@ -546,19 +616,70 @@
             saveState();
         }
 
+        function populateMonthFilterOptions() {
+            const select = document.getElementById('filter-month');
+            const currentSelected = select.value || 'current_cycle';
+
+            select.innerHTML = '';
+
+            const cycleRange = getCurrentCycleRange();
+            const optCurrent = document.createElement('option');
+            optCurrent.value = 'current_cycle';
+            optCurrent.innerText = `本期 (${cycleRange.startStr} ~ ${cycleRange.endStr})`;
+            select.appendChild(optCurrent);
+
+            const optAll = document.createElement('option');
+            optAll.value = 'all_time';
+            optAll.innerText = '所有歷史紀錄';
+            select.appendChild(optAll);
+
+            // Extract unique Year-Months from transactions
+            const monthsSet = new Set();
+            state.transactions.forEach(t => {
+                if (t.date && t.date.length >= 7) {
+                    monthsSet.add(t.date.substring(0, 7));
+                }
+            });
+
+            const sortedMonths = Array.from(monthsSet).sort().reverse();
+            sortedMonths.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = `${m} 月份明細`;
+                select.appendChild(opt);
+            });
+
+            select.value = currentSelected;
+        }
+
         function renderTransactions() {
             const tbody = document.getElementById('transaction-list-body');
             const filterType = document.getElementById('filter-type').value;
+            const filterMonth = document.getElementById('filter-month').value || 'current_cycle';
 
             tbody.innerHTML = '';
 
+            const cycleRange = getCurrentCycleRange();
+
             const filtered = state.transactions.filter(t => {
-                if (filterType === 'all') return true;
-                return t.type === filterType;
+                // Type filter
+                if (filterType !== 'all' && t.type !== filterType) return false;
+
+                // Month/Cycle filter
+                if (filterMonth === 'current_cycle') {
+                    return t.date >= cycleRange.startStr && t.date <= cycleRange.endStr;
+                } else if (filterMonth === 'all_time') {
+                    return true;
+                } else {
+                    return t.date && t.date.startsWith(filterMonth);
+                }
             });
 
+            // Sort transactions newest date first
+            filtered.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400 font-medium text-xs">尚無明細紀錄</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400 font-medium text-xs">該區間內尚無明細紀錄</td></tr>`;
                 return;
             }
 
@@ -567,7 +688,7 @@
                 tr.className = "hover:bg-slate-50/80 transition";
                 
                 tr.innerHTML = `
-                    <td class="py-2 px-2 text-[11px] text-slate-400">${tx.date}</td>
+                    <td class="py-2 px-2 text-[11px] text-slate-400 font-mono">${tx.date}</td>
                     <td class="py-2 px-2 font-semibold text-slate-800">${tx.category}</td>
                     <td class="py-2 px-2 text-slate-500">${tx.note}</td>
                     <td class="py-2 px-2 text-right font-bold text-slate-800">NT$ ${tx.amount.toLocaleString()}</td>
@@ -610,6 +731,7 @@
 
             if (!modal.classList.contains('hidden')) {
                 document.getElementById('setting-income').value = state.income;
+                document.getElementById('setting-cycle-start').value = state.cycleStartDay || 1;
                 document.getElementById('setting-savings').value = state.savingsTarget;
                 document.getElementById('setting-investment').value = state.investmentTarget;
                 document.getElementById('setting-days').value = state.daysInMonth;
@@ -672,6 +794,7 @@
         function saveSettings(e) {
             e.preventDefault();
             state.income = Number(document.getElementById('setting-income').value);
+            state.cycleStartDay = Number(document.getElementById('setting-cycle-start').value) || 1;
             state.savingsTarget = Number(document.getElementById('setting-savings').value);
             state.investmentTarget = Number(document.getElementById('setting-investment').value);
             state.daysInMonth = Number(document.getElementById('setting-days').value);
