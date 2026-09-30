@@ -492,19 +492,37 @@
                 const numAmount = parseFloat(cleanedAmount);
 
                 if (!isNaN(numAmount) && numAmount > 0) {
-                    const rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c') || 'food';
-                    
-                    // Smart validation: Map to 2-character category
+                    let rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c');
                     let qCategory = '餐飲';
-                    if (rawCat && isNaN(rawCat)) {
-                        qCategory = CATEGORY_MAP[rawCat] || CATEGORY_MAP[rawCat.toLowerCase()] || rawCat;
+
+                    if (rawCat) {
+                        try {
+                            rawCat = decodeURIComponent(rawCat).trim();
+                        } catch(e) {
+                            rawCat = rawCat.trim();
+                        }
+
+                        // Smart validation: Check if rawCat is purely a number (meaning user accidentally bound amount variable to category)
+                        if (!/^\d+$/.test(rawCat)) {
+                            if (CATEGORY_MAP[rawCat]) {
+                                qCategory = CATEGORY_MAP[rawCat];
+                            } else if (CATEGORY_MAP[rawCat.toLowerCase()]) {
+                                qCategory = CATEGORY_MAP[rawCat.toLowerCase()];
+                            } else {
+                                qCategory = rawCat.substring(0, 6);
+                            }
+                        }
                     }
                     
                     // Note logic: If custom note provided and valid, use it; otherwise, default to category name!
                     const rawNote = urlParams.get('note') || urlParams.get('n');
                     let finalNote = qCategory;
-                    if (rawNote && rawNote.trim() !== '' && rawNote !== 'iOS 捷徑快記' && isNaN(rawNote)) {
-                        finalNote = rawNote.trim();
+                    if (rawNote && rawNote.trim() !== '' && rawNote !== 'iOS 捷徑快記' && !/^\d+$/.test(rawNote)) {
+                        try {
+                            finalNote = decodeURIComponent(rawNote).trim();
+                        } catch(e) {
+                            finalNote = rawNote.trim();
+                        }
                     }
 
                     const qType = urlParams.get('type') || 'daily';
