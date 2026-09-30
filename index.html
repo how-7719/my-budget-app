@@ -374,8 +374,8 @@
                         <i class="fa-solid fa-triangle-exclamation"></i> 常見失敗的 2 大盲點：
                     </div>
                     <ul class="list-disc list-inside space-y-1 text-[11px] text-rose-800 font-medium">
+                        <li><strong>捷徑綁錯變數：</strong> 請確保 `category=` 綁定的是藍色的 **「選單結果」**，不能再次選成金額 `要求的輸入`！</li>
                         <li><strong>捷徑用錯動作：</strong> 請選擇「開啟 URL」，**不能選擇**「取得 URL 內容」(背景抓取無法執行 JavaScript)。</li>
-                        <li><strong>主畫面 App 隔離：</strong> 如果把網頁加到主畫面圖示，iOS 會將它隔離。捷徑會在 Safari 開啟，請用 Safari 開啟網頁看紀錄！</li>
                     </ul>
                 </div>
 
@@ -423,9 +423,12 @@
             '飲料零食': '飲料零食',
             '飲料': '飲料零食',
             '日常用品': '日常用品',
+            '交通交通': '交通交通',
+            '交通': '交通交通',
             '娛樂社交': '娛樂社交',
             '娛樂': '娛樂社交',
             '購物治裝': '購物治裝',
+            '購物': '購物治裝',
             '其他變動': '其他變動',
             '其他': '其他變動'
         };
@@ -474,7 +477,7 @@
         let budgetChart = null;
 
         const CATEGORIES = {
-            daily: ['餐飲外食', '飲料零食', '日常用品', '娛樂社交', '購物治裝', '其他變動'],
+            daily: ['餐飲外食', '飲料零食', '日常用品', '交通交通', '娛樂社交', '購物治裝', '其他變動'],
             fixed: ['住房租金', '水電瓦斯', '電話費/電信', '交通月票/加油', '訂閱服務', '保險其他']
         };
 
@@ -488,12 +491,20 @@
                 const numAmount = parseFloat(cleanedAmount);
 
                 if (!isNaN(numAmount) && numAmount > 0) {
-                    const rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c') || '餐飲外食';
-                    const qCategory = CATEGORY_MAP[rawCat] || CATEGORY_MAP[rawCat.toLowerCase()] || rawCat || '餐飲外食';
+                    const rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c') || 'food';
                     
-                    // Note logic: If custom note provided, use it; otherwise, default to category name!
+                    // Smart validation: If rawCat is a pure number (e.g. 225 from misconfigured variable), fallback to '餐飲外食'
+                    let qCategory = '餐飲外食';
+                    if (rawCat && isNaN(rawCat)) {
+                        qCategory = CATEGORY_MAP[rawCat] || CATEGORY_MAP[rawCat.toLowerCase()] || rawCat;
+                    }
+                    
+                    // Note logic: If custom note provided and not default placeholder, use it; otherwise, default to category name!
                     const rawNote = urlParams.get('note') || urlParams.get('n');
-                    const finalNote = (rawNote && rawNote.trim() !== '') ? rawNote.trim() : qCategory;
+                    let finalNote = qCategory;
+                    if (rawNote && rawNote.trim() !== '' && rawNote !== 'iOS 捷徑快記' && isNaN(rawNote)) {
+                        finalNote = rawNote.trim();
+                    }
 
                     const qType = urlParams.get('type') || 'daily';
                     const qDate = urlParams.get('date') || getTodayString();
