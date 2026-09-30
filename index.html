@@ -357,13 +357,13 @@
                 <p class="font-medium">系統支援 URL 參數自動記帳，包含自訂日期與類別：</p>
                 
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 font-mono text-[11px] text-indigo-700 break-all">
-                    https://how-7719.github.io/my-budget-app/?amount=120&category=餐飲外食&note=午餐&date=2026-09-30
+                    https://how-7719.github.io/my-budget-app/?amount=120&category=food&note=午餐
                 </div>
 
                 <ol class="list-decimal list-inside space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
                     <li>開啟 iOS <strong>「捷徑 App」</strong> 並新建捷徑。</li>
                     <li>新增動作 <strong>「要求輸入」</strong>（提示：金額，類型：數字）。</li>
-                    <li>新增動作 <strong>「從選單中選擇」</strong>（選擇：餐飲外食、交通、娛樂）。</li>
+                    <li>新增動作 <strong>「從選單中選擇」</strong>（選項：food、drink、traffic、play 等）。</li>
                     <li>新增動作 <strong>「開啟 URL」</strong> 帶入上面的自動記帳網址。</li>
                     <li>前往 <strong>設定 > 輔助使用 > 觸控 > 輕點背面</strong> 綁定即可！</li>
                 </ol>
@@ -390,6 +390,26 @@
             const d = String(dateObj.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
         }
+
+        const CATEGORY_MAP = {
+            'food': '餐飲外食',
+            'drink': '飲料零食',
+            'daily': '日常用品',
+            'traffic': '交通交通',
+            'play': '娛樂社交',
+            'shopping': '購物治裝',
+            'other': '其他變動',
+            '餐飲外食': '餐飲外食',
+            '餐飲': '餐飲外食',
+            '飲料零食': '飲料零食',
+            '飲料': '飲料零食',
+            '日常用品': '日常用品',
+            '娛樂社交': '娛樂社交',
+            '娛樂': '娛樂社交',
+            '購物治裝': '購物治裝',
+            '其他變動': '其他變動',
+            '其他': '其他變動'
+        };
 
         const DEFAULT_STATE = {
             income: 25000,
@@ -421,45 +441,53 @@
             fixed: ['住房租金', '水電瓦斯', '電話費/電信', '交通月票/加油', '訂閱服務', '保險其他']
         };
 
-        // PRIORITIZED URL PARAMETER CHECK ON IMMEDIATE SCRIPT LOAD
+        // FAILSAFE URL PARAMETER CHECK ON IMMEDIATE LOAD
         (function handleUrlParametersImmediately() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a');
-            if (!rawAmount) return;
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a') || urlParams.get('money');
+                if (!rawAmount) return;
 
-            const cleanedAmount = String(rawAmount).replace(/[^\d.]/g, '');
-            const numAmount = parseFloat(cleanedAmount);
+                const cleanedAmount = String(rawAmount).replace(/[^\d.]/g, '');
+                const numAmount = parseFloat(cleanedAmount);
 
-            if (!isNaN(numAmount) && numAmount > 0) {
-                const rawCategory = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c');
-                const qCategory = rawCategory ? decodeURIComponent(rawCategory) : '餐飲外食';
-                
-                const rawNote = urlParams.get('note') || urlParams.get('n');
-                const qNote = rawNote ? decodeURIComponent(rawNote) : 'iOS 捷徑快記';
-                
-                const qType = urlParams.get('type') || 'daily';
-                const qDate = urlParams.get('date') || getTodayString();
+                if (!isNaN(numAmount) && numAmount > 0) {
+                    const rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c') || '餐飲外食';
+                    const qCategory = CATEGORY_MAP[rawCat] || CATEGORY_MAP[rawCat.toLowerCase()] || rawCat || '餐飲外食';
+                    
+                    const rawNote = urlParams.get('note') || urlParams.get('n') || 'iOS 捷徑快記';
+                    const qType = urlParams.get('type') || 'daily';
+                    const qDate = urlParams.get('date') || getTodayString();
 
-                state.transactions.unshift({
-                    id: Date.now(),
-                    amount: numAmount,
-                    category: qCategory,
-                    date: qDate,
-                    type: qType,
-                    note: qNote
-                });
+                    state.transactions.unshift({
+                        id: Date.now(),
+                        amount: numAmount,
+                        category: qCategory,
+                        date: qDate,
+                        type: qType,
+                        note: rawNote
+                    });
 
-                localStorage.setItem('budget_tracker_state', JSON.stringify(state));
+                    localStorage.setItem('budget_tracker_state', JSON.stringify(state));
 
-                // Clean URL parameters immediately
-                if (window.history.replaceState) {
-                    window.history.replaceState({}, document.title, window.location.pathname);
+                    // Clean URL parameters cleanly
+                    if (window.history.replaceState) {
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+
+                    // Show toast banner safely
+                    const triggerToast = () => {
+                        showToast(`✅ 捷徑記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`);
+                    };
+
+                    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                        setTimeout(triggerToast, 300);
+                    } else {
+                        window.addEventListener('DOMContentLoaded', () => setTimeout(triggerToast, 300));
+                    }
                 }
-
-                // Show banner after DOM ready
-                window.addEventListener('DOMContentLoaded', () => {
-                    showToast(`✅ 捷徑自動記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`);
-                });
+            } catch (err) {
+                console.error("URL Params Parse Error:", err);
             }
         })();
 
@@ -496,6 +524,8 @@
             const banner = document.getElementById('toast-banner');
             const msgEl = document.getElementById('toast-message');
             const iconEl = document.getElementById('toast-icon');
+
+            if (!banner || !msgEl || !iconEl) return;
 
             msgEl.innerText = message;
             if (isSuccess) {
