@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智慧記帳與理財城市分析系統</title>
+    <title>智慧記帳與理財分析系統</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -41,7 +41,7 @@
                     <i class="fa-solid fa-wallet"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm text-slate-900 leading-tight">Finance City</h1>
+                    <h1 class="font-bold text-sm text-slate-900 leading-tight">Finance Tracker</h1>
                     <p class="text-[10px] text-slate-400 font-medium">動態預算與理財分析</p>
                 </div>
             </div>
@@ -60,46 +60,6 @@
     </header>
 
     <main class="max-w-5xl mx-auto px-4 sm:px-6 mt-6 space-y-5">
-
-        <!-- Finance City Header Card -->
-        <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl shrink-0" id="city-main-emoji">
-                    🏙️
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span id="city-level-badge" class="px-2 py-0.5 bg-indigo-500/30 text-indigo-200 border border-indigo-400/20 font-semibold text-[11px] rounded-md">
-                            Lv.1 儲蓄村
-                        </span>
-                        <span id="city-streak-badge" class="text-xs text-amber-300 font-medium flex items-center gap-1">
-                            🔥 未超標: <strong id="streak-days-count">1</strong> 天
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-300 mt-1 font-medium" id="city-desc-text">今日消費控制良好，城市運作正常。</p>
-                </div>
-            </div>
-
-            <!-- Building Indicators -->
-            <div class="flex items-center justify-between md:justify-end gap-3 text-center border-t md:border-t-0 border-slate-800 pt-3 md:pt-0 text-xs">
-                <div class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
-                    <span class="text-base block">🏡</span>
-                    <span class="text-[10px] text-slate-400" id="bldg-status-1">滿意度高</span>
-                </div>
-                <div class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
-                    <span class="text-base block">🏦</span>
-                    <span class="text-[10px] text-slate-400" id="bldg-status-2">穩定儲蓄</span>
-                </div>
-                <div class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
-                    <span class="text-base block">🚆</span>
-                    <span class="text-[10px] text-slate-400" id="bldg-status-3">獨立扣款</span>
-                </div>
-                <div class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
-                    <span class="text-base block">📈</span>
-                    <span class="text-[10px] text-amber-300" id="bldg-status-4">目標達標</span>
-                </div>
-            </div>
-        </div>
 
         <!-- Key Metrics 3-Column Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -491,37 +451,8 @@
             document.getElementById('summary-daily-total').innerText = `NT$ ${metrics.totalDailyPool.toLocaleString()}`;
             document.getElementById('summary-savings').innerText = `NT$ ${(state.savingsTarget + state.investmentTarget).toLocaleString()}`;
 
-            updateFinanceCityView(metrics);
             renderTransactions();
             renderChart(metrics);
-        }
-
-        function updateFinanceCityView(metrics) {
-            const desc = document.getElementById('city-desc-text');
-            const levelBadge = document.getElementById('city-level-badge');
-            const bldg1Status = document.getElementById('bldg-status-1');
-            const bldg2Status = document.getElementById('bldg-status-2');
-            const bldg4Status = document.getElementById('bldg-status-4');
-
-            if (metrics.todayRemaining >= 0 && metrics.projectedInvestment >= state.investmentTarget) {
-                levelBadge.innerText = "Lv.3 繁榮市";
-                desc.innerText = "理財控制極佳，城市蓬勃發展中！";
-                bldg1Status.innerText = "滿意度極高";
-                bldg2Status.innerText = "儲蓄充沛";
-                bldg4Status.innerText = "投資達標";
-            } else if (metrics.todayRemaining >= 0) {
-                levelBadge.innerText = "Lv.2 發展鎮";
-                desc.innerText = "今日消費未超額，持續保持！";
-                bldg1Status.innerText = "狀態良好";
-                bldg2Status.innerText = "穩定累積";
-                bldg4Status.innerText = "接近目標";
-            } else {
-                levelBadge.innerText = "Lv.1 儲蓄村";
-                desc.innerText = "今日開銷超額，城市啟動調控機制。";
-                bldg1Status.innerText = "開銷偏高";
-                bldg2Status.innerText = "儲蓄擠壓";
-                bldg4Status.innerText = "需再調整";
-            }
         }
 
         function setTransactionType(type) {
@@ -724,4 +655,3 @@
     </script>
 </body>
 </html>
-```
