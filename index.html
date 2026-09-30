@@ -35,9 +35,12 @@
 
     <!-- Toast Notification Banner for iOS Shortcuts -->
     <div id="toast-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 transform -translate-y-20 opacity-0 pointer-events-none w-11/12 max-w-md">
-        <div class="bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-2.5">
-            <span id="toast-icon" class="text-emerald-400 text-sm"><i class="fa-solid fa-circle-check"></i></span>
-            <span id="toast-message">已完成自動記帳</span>
+        <div class="bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-3.5 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <span id="toast-icon" class="text-emerald-400 text-base"><i class="fa-solid fa-circle-check"></i></span>
+                <span id="toast-message">已完成自動記帳</span>
+            </div>
+            <button onclick="dismissToast()" class="text-slate-400 hover:text-white text-xs px-2 py-1">關閉</button>
         </div>
     </div>
 
@@ -55,19 +58,19 @@
             </div>
 
             <div class="flex items-center space-x-2">
-                <button onclick="toggleIosGuideModal()" class="text-xs px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition font-medium flex items-center gap-1.5">
+                <button onclick="toggleIosGuideModal()" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition font-semibold flex items-center gap-1.5">
                     <i class="fa-brands fa-apple text-sm"></i>
-                    <span class="hidden sm:inline">iOS 捷徑說明</span>
+                    <span>捷徑除錯指南</span>
                 </button>
                 <button onclick="toggleSettingsModal()" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition font-semibold flex items-center gap-1.5 shadow-xs">
                     <i class="fa-solid fa-sliders text-xs"></i>
-                    <span>設定收入與固定開銷</span>
+                    <span class="hidden sm:inline">設定收入與開銷</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-4 sm:px-6 mt-6 space-y-5">
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 mt-5 space-y-5">
 
         <!-- Key Metrics 3-Column Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -133,7 +136,7 @@
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
-                    <span class="font-bold text-xs uppercase tracking-wider text-slate-500">快速記帳</span>
+                    <span class="font-bold text-xs uppercase tracking-wider text-slate-500">⚡ 快速手動記帳</span>
                 </div>
                 <div class="flex bg-slate-100 p-0.5 rounded-lg text-xs font-medium">
                     <button id="type-btn-daily" type="button" onclick="setTransactionType('daily')" class="px-2.5 py-1 rounded-md bg-white text-indigo-600 shadow-xs font-semibold transition">
@@ -341,36 +344,52 @@
         </div>
     </div>
 
-    <!-- MODAL 2: iOS Shortcut Guide -->
+    <!-- MODAL 2: iOS Shortcut Debug & Setup Guide -->
     <div id="ios-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-100">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-3">
                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                    <i class="fa-brands fa-apple text-base"></i> iOS 捷徑快速記帳設定
+                    <i class="fa-brands fa-apple text-emerald-600 text-base"></i> iOS 捷徑除錯與實時測試
                 </h3>
                 <button type="button" onclick="toggleIosGuideModal()" class="text-slate-400 hover:text-slate-600">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <div class="space-y-3 text-xs text-slate-600">
-                <p class="font-medium">系統支援 URL 參數自動記帳，包含自訂日期與類別：</p>
+            <div class="space-y-3.5 text-xs text-slate-600">
                 
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 font-mono text-[11px] text-indigo-700 break-all">
-                    https://how-7719.github.io/my-budget-app/?amount=120&category=food&note=午餐
+                <!-- Quick Test Section -->
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200/80 space-y-2">
+                    <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-vial"></i> 測試自動記帳功能
+                    </div>
+                    <p class="text-[11px] text-emerald-800">點擊下方按鈕測試系統能否自動寫入 120 元便當：</p>
+                    <button onclick="simulateShortcutAutoLog()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition shadow-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-bolt"></i> 一鍵模擬 iOS 捷徑寫入 (NT$120)
+                    </button>
                 </div>
 
-                <ol class="list-decimal list-inside space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
-                    <li>開啟 iOS <strong>「捷徑 App」</strong> 並新建捷徑。</li>
-                    <li>新增動作 <strong>「要求輸入」</strong>（提示：金額，類型：數字）。</li>
-                    <li>新增動作 <strong>「從選單中選擇」</strong>（選項：food、drink、traffic、play 等）。</li>
-                    <li>新增動作 <strong>「開啟 URL」</strong> 帶入上面的自動記帳網址。</li>
-                    <li>前往 <strong>設定 > 輔助使用 > 觸控 > 輕點背面</strong> 綁定即可！</li>
-                </ol>
+                <div class="bg-rose-50 p-3 rounded-xl border border-rose-200/80 space-y-1.5">
+                    <div class="font-bold text-rose-900 flex items-center gap-1 text-[11px]">
+                        <i class="fa-solid fa-triangle-exclamation"></i> 常見失敗的 2 大盲點：
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-[11px] text-rose-800 font-medium">
+                        <li><strong>捷徑用錯動作：</strong> 請選擇「開啟 URL」，**不能選擇**「取得 URL 內容」(背景抓取無法執行 JavaScript)。</li>
+                        <li><strong>主畫面 App 隔離：</strong> 如果把網址加到主畫面圖示，iOS 會將它隔離。捷徑會在 Safari 開啟，請用 Safari 開啟網頁看紀錄！</li>
+                    </ul>
+                </div>
+
+                <div class="space-y-1.5">
+                    <div class="font-bold text-slate-800 text-[11px]">正解捷徑網址格式 (複製到捷徑「開啟 URL」)：</div>
+                    <div class="bg-slate-900 text-emerald-400 p-2.5 rounded-xl font-mono text-[10px] break-all select-all">
+                        https://how-7719.github.io/my-budget-app/?amount=120&category=food&note=便當
+                    </div>
+                </div>
+
             </div>
 
             <div class="mt-4 text-right">
-                <button type="button" onclick="toggleIosGuideModal()" class="px-4 py-1.5 rounded-xl bg-slate-900 text-white font-semibold text-xs">知道囉</button>
+                <button type="button" onclick="toggleIosGuideModal()" class="px-4 py-1.5 rounded-xl bg-slate-900 text-white font-semibold text-xs">我知道了</button>
             </div>
         </div>
     </div>
@@ -459,25 +478,6 @@
             fixed: ['住房租金', '水電瓦斯', '電話費/電信', '交通月票/加油', '訂閱服務', '保險其他']
         };
 
-        function initApp() {
-            try {
-                const txDateInput = document.getElementById('tx-date');
-                if (txDateInput) txDateInput.value = getTodayString();
-                
-                updateCategoryDropdown();
-                handleUrlParameters();
-                renderAll();
-            } catch(err) {
-                console.error("App Initialization Error:", err);
-            }
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initApp);
-        } else {
-            initApp();
-        }
-
         function handleUrlParameters() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -512,11 +512,28 @@
 
                     setTimeout(() => {
                         showToast(`✅ 捷徑記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`);
-                    }, 300);
+                    }, 200);
                 }
             } catch (err) {
                 console.error("URL Params Parse Error:", err);
             }
+        }
+
+        function simulateShortcutAutoLog() {
+            const numAmount = 120;
+            const qCategory = '餐飲外食';
+            state.transactions.unshift({
+                id: Date.now(),
+                amount: numAmount,
+                category: qCategory,
+                date: getTodayString(),
+                type: 'daily',
+                note: '測試快捷便當'
+            });
+
+            saveState();
+            toggleIosGuideModal();
+            showToast(`✅ 模擬捷徑記帳成功！NT$ ${numAmount} (${qCategory})`);
         }
 
         function getCurrentCycleRange() {
@@ -558,11 +575,14 @@
 
             banner.classList.remove('-translate-y-20', 'opacity-0', 'pointer-events-none');
             banner.classList.add('translate-y-0', 'opacity-100');
+        }
 
-            setTimeout(() => {
+        function dismissToast() {
+            const banner = document.getElementById('toast-banner');
+            if (banner) {
                 banner.classList.remove('translate-y-0', 'opacity-100');
                 banner.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
-            }, 4000);
+            }
         }
 
         function saveState() {
@@ -936,6 +956,25 @@
         function toggleIosGuideModal() {
             const modal = document.getElementById('ios-modal');
             if (modal) modal.classList.toggle('hidden');
+        }
+
+        function initApp() {
+            try {
+                const txDateInput = document.getElementById('tx-date');
+                if (txDateInput) txDateInput.value = getTodayString();
+                
+                updateCategoryDropdown();
+                handleUrlParameters();
+                renderAll();
+            } catch(err) {
+                console.error("App Initialization Error:", err);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
         }
     </script>
 </body>
