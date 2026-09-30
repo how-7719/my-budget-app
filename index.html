@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧記帳與理財城市分析系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter / Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen antialiased pb-16">
+
+    <!-- Navigation Bar -->
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/80">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm text-slate-900 leading-tight">Finance City</h1>
+                    <p class="text-[10px] text-slate-400 font-medium">動態預算與理財分析</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleIosGuideModal()" class="text-xs px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition font-medium flex items-center gap-1.5">
+                    <i class="fa-brands fa-apple text-sm"></i>
+                    <span class="hidden sm:inline">iOS 捷徑</span>
+                </button>
+                <button onclick="toggleSettingsModal()" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition font-semibold flex items-center gap-1.5 shadow-xs">
+                    <i class="fa-solid fa-sliders text-xs"></i>
+                    <span>設定收入與固定開銷</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 mt-6 space-y-5">
+
+        <!-- Finance City Header Card -->
+        <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl shrink-0" id="city-main-emoji">
+                    🏙️
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="city-level-badge" class="px-2 py-0.5 bg-indigo-500/30 text-indigo-200 border border-indigo-400/20 font-semibold text-[11px] rounded-md">
+                            Lv.1 儲蓄村
+                        </span>
+                        <span id="city-streak-badge" class="text-xs text-amber-300 font-medium flex items-center gap-1">
+                            🔥 未超標: <strong id="streak-days-count">1</strong> 天
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1 font-medium" id="city-desc-text">今日消費控制良好，城市運作正常。</p>
+                </div>
+            </div>
+
+            <!-- Building Indicators -->
+            <div class="flex items-center justify-between md:justify-end gap-3 text-center border-t md:border-t-0 border-slate-800 pt-3 md:pt-0 text-xs">
+                <div class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
+                    <span class="text-base block">🏡</span>
+                    <span class="text-[10px] text-slate-400" id="bldg-status-1">滿意度高</span>
+                </div>
+                <div class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
+                    <span class="text-base block">🏦</span>
+                    <span class="text-[10px] text-slate-400" id="bldg-status-2">穩定儲蓄</span>
+                </div>
+                <div class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
+                    <span class="text-base block">🚆</span>
+                    <span class="text-[10px] text-slate-400" id="bldg-status-3">獨立扣款</span>
+                </div>
+                <div class="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
+                    <span class="text-base block">📈</span>
+                    <span class="text-[10px] text-amber-300" id="bldg-status-4">目標達標</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics 3-Column Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Daily Budget Metric -->
+            <div id="today-budget-card" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">今日預算剩餘額度</span>
+                        <span id="budget-status-badge" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            預算充裕
+                        </span>
+                    </div>
+                    <div class="text-3xl font-bold text-slate-900 tracking-tight my-1" id="today-remaining-amount">NT$ 0</div>
+                </div>
+
+                <div class="mt-3 space-y-1.5">
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div id="today-progress-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-slate-500 font-medium">
+                        <span>已花: <strong id="today-spent-amount" class="text-slate-700">NT$ 0</strong></span>
+                        <span>每日目標: <span id="today-target-budget" class="text-slate-600">NT$ 0</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fixed Expenses Metric -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">固定與必要開銷</span>
+                        <button onclick="toggleSettingsModal('fixed')" class="text-[11px] text-indigo-600 font-semibold bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md transition flex items-center gap-1">
+                            <i class="fa-solid fa-pen-to-square text-[10px]"></i> 設定開銷
+                        </button>
+                    </div>
+                    <div class="text-3xl font-bold text-slate-900 tracking-tight my-1" id="total-fixed-display">NT$ 0</div>
+                </div>
+                <div class="text-[11px] text-slate-500 font-medium flex justify-between items-center pt-2 border-t border-slate-100">
+                    <span id="fixed-count-text">含房租、水電、通訊、交通</span>
+                    <button onclick="toggleSettingsModal('fixed')" class="text-indigo-600 font-semibold hover:underline">管理明細</button>
+                </div>
+            </div>
+
+            <!-- Projected Investment Metric -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">月底預估可投入投資</span>
+                        <i class="fa-solid fa-chart-line text-indigo-500 text-sm"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-indigo-600 tracking-tight my-1" id="projected-investment-display">NT$ 0</div>
+                </div>
+                <div class="text-[11px] text-slate-500 font-medium flex justify-between items-center pt-2 border-t border-slate-100">
+                    <span>目標: <span id="target-investment-text" class="font-semibold text-slate-700">NT$ 0</span></span>
+                    <span id="investment-health-tag" class="text-emerald-600 font-semibold">100% 達標</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Streamlined Quick Transaction Bar -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-xs uppercase tracking-wider text-slate-500">快速記帳</span>
+                </div>
+                <div class="flex bg-slate-100 p-0.5 rounded-lg text-xs font-medium">
+                    <button id="type-btn-daily" onclick="setTransactionType('daily')" class="px-2.5 py-1 rounded-md bg-white text-indigo-600 shadow-xs font-semibold transition">
+                        🍕 日常開銷
+                    </button>
+                    <button id="type-btn-fixed" onclick="setTransactionType('fixed')" class="px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-800 transition">
+                        🏠 固定支出
+                    </button>
+                </div>
+            </div>
+
+            <form id="add-transaction-form" onsubmit="handleAddTransaction(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                <input type="hidden" id="tx-type" value="daily">
+
+                <div class="sm:col-span-3">
+                    <input type="number" id="tx-amount" required min="1" placeholder="金額 NT$" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold">
+                </div>
+
+                <div class="sm:col-span-3">
+                    <select id="tx-category" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm text-slate-700 bg-white font-medium">
+                        <!-- Options injected dynamically -->
+                    </select>
+                </div>
+
+                <div class="sm:col-span-4">
+                    <input type="text" id="tx-note" placeholder="備註 (如：午餐便當)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm">
+                </div>
+
+                <input type="hidden" id="tx-date">
+
+                <div class="sm:col-span-2">
+                    <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition shadow-xs flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-plus text-xs"></i> 記錄
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Content Split: Transaction Table & Overview Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            
+            <!-- Left: Transaction History List -->
+            <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <h3 class="font-bold text-sm text-slate-800">消費明細紀錄</h3>
+                    <select id="filter-type" onchange="renderTransactions()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white focus:outline-none">
+                        <option value="all">全部類型</option>
+                        <option value="daily">僅日常變動</option>
+                        <option value="fixed">僅固定扣款</option>
+                    </select>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="text-slate-400 uppercase text-[10px] font-semibold border-b border-slate-100">
+                            <tr>
+                                <th class="py-2 px-2">日期</th>
+                                <th class="py-2 px-2">分類</th>
+                                <th class="py-2 px-2">備註</th>
+                                <th class="py-2 px-2 text-right">金額</th>
+                                <th class="py-2 px-2 text-center">刪除</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-list-body" class="divide-y divide-slate-100 font-medium">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Right: Allocation Chart & Breakdown -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4">
+                <h3 class="font-bold text-sm text-slate-800">本月資金配置概況</h3>
+
+                <div class="relative h-40 flex items-center justify-center">
+                    <canvas id="budgetChart"></canvas>
+                </div>
+
+                <div class="space-y-1.5 text-xs font-medium">
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50">
+                        <span class="text-slate-500 flex items-center gap-1.5">
+                            月總收入/生活費
+                            <button onclick="toggleSettingsModal('income')" class="text-slate-400 hover:text-indigo-600 transition" title="點擊修改月收入">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                        </span>
+                        <strong id="summary-income" class="text-slate-800">NT$ 0</strong>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50">
+                        <span class="text-slate-500">固定與必要開銷</span>
+                        <strong id="summary-fixed" class="text-indigo-600">NT$ 0</strong>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50">
+                        <span class="text-slate-500">可用日常生活費</span>
+                        <strong id="summary-daily-total" class="text-amber-600">NT$ 0</strong>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50">
+                        <span class="text-slate-500">預留儲蓄與投資額</span>
+                        <strong id="summary-savings" class="text-emerald-600">NT$ 0</strong>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm">財務設定：每月收入與固定開銷</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">自訂你的每月收入、固定扣款項目與儲蓄目標</p>
+                </div>
+                <button onclick="toggleSettingsModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="saveSettings(event)" class="space-y-4 text-xs">
+                <!-- Monthly Income Field -->
+                <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/80 space-y-1">
+                    <label class="block font-bold text-indigo-900 mb-1 flex items-center justify-between">
+                        <span>💰 每月總收入 / 生活費 (NT$)</span>
+                        <span class="text-[10px] font-normal text-indigo-600">主要資金來源</span>
+                    </label>
+                    <input type="number" id="setting-income" required min="0" placeholder="例如：25000" class="w-full px-3 py-2 bg-white rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-base text-indigo-700">
+                </div>
+
+                <!-- Fixed Expenses List Management -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2.5">
+                    <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                        <div>
+                            <label class="block font-bold text-slate-800">🏠 固定與必要開銷清單</label>
+                            <span class="text-[10px] text-slate-400">房租、水電、電話費、交通月票等</span>
+                        </div>
+                        <button type="button" onclick="addFixedExpenseRow()" class="text-[11px] bg-indigo-600 text-white font-semibold px-2.5 py-1 rounded-lg hover:bg-indigo-700 transition flex items-center gap-1 shadow-xs">
+                            <i class="fa-solid fa-plus text-[10px]"></i> 新增項目
+                        </button>
+                    </div>
+
+                    <div id="fixed-expense-rows" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <!-- Dynamic expense rows injected by JavaScript -->
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs font-semibold text-slate-600 pt-1 border-t border-slate-200/60">
+                        <span>固定開銷小計：</span>
+                        <span id="fixed-expenses-subtotal" class="text-indigo-600 font-bold text-sm">NT$ 0</span>
+                    </div>
+                </div>
+
+                <!-- Savings and Investment Goals -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">🛡️ 緊急預備金</label>
+                        <input type="number" id="setting-savings" required min="0" class="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">📈 目標投資額 (ETF)</label>
+                        <input type="number" id="setting-investment" required min="0" class="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-semibold text-indigo-600">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">📅 當月計算天數</label>
+                    <input type="number" id="setting-days" required min="28" max="31" class="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium">
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" onclick="toggleSettingsModal()" class="px-3.5 py-1.5 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition">取消</button>
+                    <button type="submit" class="px-5 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold shadow-sm hover:bg-indigo-700 transition">儲存變更</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: iOS Shortcut Guide -->
+    <div id="ios-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-100">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-3">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                    <i class="fa-brands fa-apple text-base"></i> iOS 輕點背面快記設定
+                </h3>
+                <button onclick="toggleIosGuideModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-600">
+                <p class="font-medium">無需打開 App，敲敲手機背面兩下即可記帳：</p>
+                
+                <ol class="list-decimal list-inside space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                    <li>開啟 iOS <strong>「捷徑 App」</strong> 並新建捷徑。</li>
+                    <li>新增動作 <strong>「要求輸入」</strong>（提示：金額，類型：數字）。</li>
+                    <li>新增動作 <strong>「從選單中選擇」</strong>（選擇：餐飲、交通、娛樂）。</li>
+                    <li>綁定至 <strong>設定 > 輔助使用 > 觸控 > 輕點背面</strong>。</li>
+                </ol>
+            </div>
+
+            <div class="mt-4 text-right">
+                <button onclick="toggleIosGuideModal()" class="px-4 py-1.5 rounded-xl bg-slate-900 text-white font-semibold text-xs">知道囉</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_STATE = {
+            income: 25000,
+            fixedExpenses: [
+                { id: 1, name: '宿舍/租金', amount: 7000, category: '住房' },
+                { id: 2, name: '水電瓦斯網路', amount: 1000, category: '帳單' },
+                { id: 3, name: '電話費/電信月租', amount: 499, category: '帳單' },
+                { id: 4, name: 'TPASS/交通定期票', amount: 1200, category: '交通' }
+            ],
+            savingsTarget: 2000,
+            investmentTarget: 4000,
+            daysInMonth: 30,
+            streakDays: 3,
+            transactions: [
+                { id: 101, date: getTodayString(), amount: 110, category: '餐飲外食', type: 'daily', note: '午餐排骨飯' },
+                { id: 102, date: getTodayString(), amount: 60, category: '飲料零食', type: 'daily', note: '拿鐵咖啡' },
+                { id: 103, date: getTodayString(), amount: 499, category: '電話費/電信', type: 'fixed', note: '電信帳單' }
+            ]
+        };
+
+        let state = JSON.parse(localStorage.getItem('budget_tracker_state')) || DEFAULT_STATE;
+        let tempFixedExpenses = [];
+        let budgetChart = null;
+
+        const CATEGORIES = {
+            daily: ['餐飲外食', '飲料零食', '日常用品', '娛樂社交', '購物治裝', '其他變動'],
+            fixed: ['住房租金', '水電瓦斯', '電話費/電信', '交通月票/加油', '訂閱服務', '保險其他']
+        };
+
+        window.onload = function() {
+            document.getElementById('tx-date').value = getTodayString();
+            updateCategoryDropdown();
+            renderAll();
+        };
+
+        function saveState() {
+            localStorage.setItem('budget_tracker_state', JSON.stringify(state));
+            renderAll();
+        }
+
+        function getTodayString() {
+            return new Date().toISOString().split('T')[0];
+        }
+
+        function calculateBudgetMetrics() {
+            const totalFixedBudget = state.fixedExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+            const totalDailyPool = Math.max(0, state.income - totalFixedBudget - state.savingsTarget - state.investmentTarget);
+            const baseDailyBudget = Math.round(totalDailyPool / state.daysInMonth);
+
+            const todayStr = getTodayString();
+            const todayDailySpent = state.transactions
+                .filter(t => t.date === todayStr && t.type === 'daily')
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            const totalDailySpentMonth = state.transactions
+                .filter(t => t.type === 'daily')
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            const todayRemaining = baseDailyBudget - todayDailySpent;
+            const projectedInvestment = Math.max(0, state.income - totalFixedBudget - state.savingsTarget - totalDailySpentMonth);
+
+            return {
+                totalFixedBudget,
+                totalDailyPool,
+                baseDailyBudget,
+                todayDailySpent,
+                todayRemaining,
+                projectedInvestment,
+                totalDailySpentMonth
+            };
+        }
+
+        function renderAll() {
+            const metrics = calculateBudgetMetrics();
+
+            // Daily Budget Metrics
+            document.getElementById('today-remaining-amount').innerText = `NT$ ${metrics.todayRemaining.toLocaleString()}`;
+            document.getElementById('today-spent-amount').innerText = `NT$ ${metrics.todayDailySpent.toLocaleString()}`;
+            document.getElementById('today-target-budget').innerText = `NT$ ${metrics.baseDailyBudget.toLocaleString()}`;
+
+            const progressBar = document.getElementById('today-progress-bar');
+            const statusBadge = document.getElementById('budget-status-badge');
+
+            const spendPercentage = metrics.baseDailyBudget > 0 ? (metrics.todayDailySpent / metrics.baseDailyBudget) * 100 : 0;
+            progressBar.style.width = `${Math.min(100, spendPercentage)}%`;
+
+            if (metrics.todayRemaining >= 0) {
+                progressBar.className = "bg-emerald-500 h-1.5 rounded-full transition-all duration-300";
+                statusBadge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100";
+                statusBadge.innerText = "預算充裕";
+            } else {
+                progressBar.className = "bg-rose-500 h-1.5 rounded-full transition-all duration-300";
+                statusBadge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-600 border border-rose-100";
+                statusBadge.innerText = "今日已超額";
+            }
+
+            // Fixed & Investment Metrics
+            document.getElementById('total-fixed-display').innerText = `NT$ ${metrics.totalFixedBudget.toLocaleString()}`;
+            const fixedCount = state.fixedExpenses.length;
+            document.getElementById('fixed-count-text').innerText = fixedCount > 0 ? `包含 ${fixedCount} 項固定扣款` : '尚未設定固定開銷';
+
+            document.getElementById('projected-investment-display').innerText = `NT$ ${metrics.projectedInvestment.toLocaleString()}`;
+            document.getElementById('target-investment-text').innerText = `NT$ ${state.investmentTarget.toLocaleString()}`;
+
+            const healthTag = document.getElementById('investment-health-tag');
+            if (metrics.projectedInvestment >= state.investmentTarget) {
+                healthTag.className = "text-emerald-600 font-semibold";
+                healthTag.innerText = "100% 達標";
+            } else {
+                healthTag.className = "text-amber-600 font-semibold";
+                healthTag.innerText = "預估未達標";
+            }
+
+            // Summaries
+            document.getElementById('summary-income').innerText = `NT$ ${state.income.toLocaleString()}`;
+            document.getElementById('summary-fixed').innerText = `NT$ ${metrics.totalFixedBudget.toLocaleString()}`;
+            document.getElementById('summary-daily-total').innerText = `NT$ ${metrics.totalDailyPool.toLocaleString()}`;
+            document.getElementById('summary-savings').innerText = `NT$ ${(state.savingsTarget + state.investmentTarget).toLocaleString()}`;
+
+            updateFinanceCityView(metrics);
+            renderTransactions();
+            renderChart(metrics);
+        }
+
+        function updateFinanceCityView(metrics) {
+            const desc = document.getElementById('city-desc-text');
+            const levelBadge = document.getElementById('city-level-badge');
+            const bldg1Status = document.getElementById('bldg-status-1');
+            const bldg2Status = document.getElementById('bldg-status-2');
+            const bldg4Status = document.getElementById('bldg-status-4');
+
+            if (metrics.todayRemaining >= 0 && metrics.projectedInvestment >= state.investmentTarget) {
+                levelBadge.innerText = "Lv.3 繁榮市";
+                desc.innerText = "理財控制極佳，城市蓬勃發展中！";
+                bldg1Status.innerText = "滿意度極高";
+                bldg2Status.innerText = "儲蓄充沛";
+                bldg4Status.innerText = "投資達標";
+            } else if (metrics.todayRemaining >= 0) {
+                levelBadge.innerText = "Lv.2 發展鎮";
+                desc.innerText = "今日消費未超額，持續保持！";
+                bldg1Status.innerText = "狀態良好";
+                bldg2Status.innerText = "穩定累積";
+                bldg4Status.innerText = "接近目標";
+            } else {
+                levelBadge.innerText = "Lv.1 儲蓄村";
+                desc.innerText = "今日開銷超額，城市啟動調控機制。";
+                bldg1Status.innerText = "開銷偏高";
+                bldg2Status.innerText = "儲蓄擠壓";
+                bldg4Status.innerText = "需再調整";
+            }
+        }
+
+        function setTransactionType(type) {
+            document.getElementById('tx-type').value = type;
+            const dailyBtn = document.getElementById('type-btn-daily');
+            const fixedBtn = document.getElementById('type-btn-fixed');
+
+            if (type === 'daily') {
+                dailyBtn.className = "px-2.5 py-1 rounded-md bg-white text-indigo-600 shadow-xs font-semibold transition";
+                fixedBtn.className = "px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-800 transition";
+            } else {
+                fixedBtn.className = "px-2.5 py-1 rounded-md bg-white text-indigo-600 shadow-xs font-semibold transition";
+                dailyBtn.className = "px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-800 transition";
+            }
+
+            updateCategoryDropdown();
+        }
+
+        function updateCategoryDropdown() {
+            const type = document.getElementById('tx-type').value;
+            const categorySelect = document.getElementById('tx-category');
+            categorySelect.innerHTML = '';
+
+            CATEGORIES[type].forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                categorySelect.appendChild(opt);
+            });
+        }
+
+        function handleAddTransaction(e) {
+            e.preventDefault();
+            const amount = Number(document.getElementById('tx-amount').value);
+            const category = document.getElementById('tx-category').value;
+            const type = document.getElementById('tx-type').value;
+            const note = document.getElementById('tx-note').value;
+            const date = document.getElementById('tx-date').value || getTodayString();
+
+            if (!amount || amount <= 0) return;
+
+            state.transactions.unshift({
+                id: Date.now(),
+                amount,
+                category,
+                date,
+                type,
+                note: note || category
+            });
+
+            saveState();
+            document.getElementById('tx-amount').value = '';
+            document.getElementById('tx-note').value = '';
+        }
+
+        function deleteTransaction(id) {
+            state.transactions = state.transactions.filter(t => t.id !== id);
+            saveState();
+        }
+
+        function renderTransactions() {
+            const tbody = document.getElementById('transaction-list-body');
+            const filterType = document.getElementById('filter-type').value;
+
+            tbody.innerHTML = '';
+
+            const filtered = state.transactions.filter(t => {
+                if (filterType === 'all') return true;
+                return t.type === filterType;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400 font-medium text-xs">尚無明細紀錄</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(tx => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                
+                tr.innerHTML = `
+                    <td class="py-2 px-2 text-[11px] text-slate-400">${tx.date}</td>
+                    <td class="py-2 px-2 font-semibold text-slate-800">${tx.category}</td>
+                    <td class="py-2 px-2 text-slate-500">${tx.note}</td>
+                    <td class="py-2 px-2 text-right font-bold text-slate-800">NT$ ${tx.amount.toLocaleString()}</td>
+                    <td class="py-2 px-2 text-center">
+                        <button onclick="deleteTransaction(${tx.id})" class="text-slate-300 hover:text-rose-500 transition p-1">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderChart(metrics) {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            if (budgetChart) budgetChart.destroy();
+
+            budgetChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['固定開銷', '日常可支配', '儲蓄與投資'],
+                    datasets: [{
+                        data: [metrics.totalFixedBudget, metrics.totalDailyPool, state.savingsTarget + state.investmentTarget],
+                        backgroundColor: ['#6366f1', '#f59e0b', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    cutout: '75%'
+                }
+            });
+        }
+
+        function toggleSettingsModal(focusTarget) {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden');
+
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('setting-income').value = state.income;
+                document.getElementById('setting-savings').value = state.savingsTarget;
+                document.getElementById('setting-investment').value = state.investmentTarget;
+                document.getElementById('setting-days').value = state.daysInMonth;
+
+                tempFixedExpenses = JSON.parse(JSON.stringify(state.fixedExpenses));
+                renderFixedExpenseRows();
+
+                if (focusTarget === 'income') {
+                    setTimeout(() => document.getElementById('setting-income').focus(), 100);
+                }
+            }
+        }
+
+        function renderFixedExpenseRows() {
+            const container = document.getElementById('fixed-expense-rows');
+            container.innerHTML = '';
+
+            let subtotal = 0;
+
+            if (tempFixedExpenses.length === 0) {
+                container.innerHTML = `<div class="text-center py-3 text-slate-400 text-xs">目前沒有固定開銷，點擊右上角新增</div>`;
+            } else {
+                tempFixedExpenses.forEach((exp, index) => {
+                    subtotal += Number(exp.amount || 0);
+                    const div = document.createElement('div');
+                    div.className = "flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-200/80 shadow-2xs";
+                    div.innerHTML = `
+                        <input type="text" value="${exp.name || ''}" oninput="updateFixedExpense(${index}, 'name', this.value)" placeholder="項目名稱" class="flex-1 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <div class="relative w-28">
+                            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">$</span>
+                            <input type="number" value="${exp.amount || 0}" min="0" oninput="updateFixedExpense(${index}, 'amount', Number(this.value))" placeholder="金額" class="w-full pl-5 pr-2 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                        <button type="button" onclick="removeFixedExpenseRow(${index})" class="text-slate-300 hover:text-rose-500 p-1 transition">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            document.getElementById('fixed-expenses-subtotal').innerText = `NT$ ${subtotal.toLocaleString()}`;
+        }
+
+        function addFixedExpenseRow() {
+            tempFixedExpenses.push({ id: Date.now(), name: '', amount: 0, category: '帳單' });
+            renderFixedExpenseRows();
+        }
+
+        function removeFixedExpenseRow(index) {
+            tempFixedExpenses.splice(index, 1);
+            renderFixedExpenseRows();
+        }
+
+        function updateFixedExpense(index, field, value) {
+            tempFixedExpenses[index][field] = value;
+            let subtotal = tempFixedExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+            document.getElementById('fixed-expenses-subtotal').innerText = `NT$ ${subtotal.toLocaleString()}`;
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            state.income = Number(document.getElementById('setting-income').value);
+            state.savingsTarget = Number(document.getElementById('setting-savings').value);
+            state.investmentTarget = Number(document.getElementById('setting-investment').value);
+            state.daysInMonth = Number(document.getElementById('setting-days').value);
+
+            state.fixedExpenses = JSON.parse(JSON.stringify(tempFixedExpenses));
+
+            toggleSettingsModal();
+            saveState();
+        }
+
+        function toggleIosGuideModal() {
+            document.getElementById('ios-modal').classList.toggle('hidden');
+        }
+    </script>
+</body>
+</html>
+```
+
+貼上後點擊綠色的 **「Commit changes...」** 儲存，接著去 **Settings > Pages** 就能拿到你的專屬記帳網址囉！
