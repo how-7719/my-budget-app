@@ -421,13 +421,51 @@
             fixed: ['住房租金', '水電瓦斯', '電話費/電信', '交通月票/加油', '訂閱服務', '保險其他']
         };
 
+        // PRIORITIZED URL PARAMETER CHECK ON IMMEDIATE SCRIPT LOAD
+        (function handleUrlParametersImmediately() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a');
+            if (!rawAmount) return;
+
+            const cleanedAmount = String(rawAmount).replace(/[^\d.]/g, '');
+            const numAmount = parseFloat(cleanedAmount);
+
+            if (!isNaN(numAmount) && numAmount > 0) {
+                const rawCategory = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c');
+                const qCategory = rawCategory ? decodeURIComponent(rawCategory) : '餐飲外食';
+                
+                const rawNote = urlParams.get('note') || urlParams.get('n');
+                const qNote = rawNote ? decodeURIComponent(rawNote) : 'iOS 捷徑快記';
+                
+                const qType = urlParams.get('type') || 'daily';
+                const qDate = urlParams.get('date') || getTodayString();
+
+                state.transactions.unshift({
+                    id: Date.now(),
+                    amount: numAmount,
+                    category: qCategory,
+                    date: qDate,
+                    type: qType,
+                    note: qNote
+                });
+
+                localStorage.setItem('budget_tracker_state', JSON.stringify(state));
+
+                // Clean URL parameters immediately
+                if (window.history.replaceState) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+
+                // Show banner after DOM ready
+                window.addEventListener('DOMContentLoaded', () => {
+                    showToast(`✅ 捷徑自動記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`);
+                });
+            }
+        })();
+
         window.onload = function() {
             document.getElementById('tx-date').value = getTodayString();
             updateCategoryDropdown();
-            
-            // Handle URL Parameters for iOS Shortcut Auto-Add
-            checkAndHandleUrlParameters();
-
             renderAll();
         };
 
@@ -473,44 +511,6 @@
                 banner.classList.remove('translate-y-0', 'opacity-100');
                 banner.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
             }, 4000);
-        }
-
-        function checkAndHandleUrlParameters() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a');
-            if (!rawAmount) return;
-
-            const cleanedAmount = String(rawAmount).replace(/[^\d.]/g, '');
-            const numAmount = parseFloat(cleanedAmount);
-
-            if (!isNaN(numAmount) && numAmount > 0) {
-                const rawCategory = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c');
-                const qCategory = rawCategory ? decodeURIComponent(rawCategory) : '餐飲外食';
-                
-                const rawNote = urlParams.get('note') || urlParams.get('n');
-                const qNote = rawNote ? decodeURIComponent(rawNote) : 'iOS 捷徑快記';
-                
-                const qType = urlParams.get('type') || 'daily';
-                const qDate = urlParams.get('date') || getTodayString();
-
-                state.transactions.unshift({
-                    id: Date.now(),
-                    amount: numAmount,
-                    category: qCategory,
-                    date: qDate,
-                    type: qType,
-                    note: qNote
-                });
-
-                localStorage.setItem('budget_tracker_state', JSON.stringify(state));
-
-                // Clean URL parameters without page reload
-                window.history.replaceState({}, document.title, window.location.pathname);
-
-                setTimeout(() => {
-                    showToast(`✅ 捷徑自動記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`);
-                }, 300);
-            }
         }
 
         function saveState() {
