@@ -308,7 +308,7 @@
         <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-100">
             <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-3">
                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                    <i class="fa-brands fa-apple text-base"></i> iOS 輕點背面快記設定
+                    <i class="fa-brands fa-apple text-base"></i> iOS 捷徑快速記帳設定
                 </h3>
                 <button onclick="toggleIosGuideModal()" class="text-slate-400 hover:text-slate-600">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -316,13 +316,18 @@
             </div>
 
             <div class="space-y-3 text-xs text-slate-600">
-                <p class="font-medium">無需打開 App，敲敲手機背面兩下即可記帳：</p>
+                <p class="font-medium">系統已支援 URL 參數自動記帳，iOS 捷徑可直接呼叫網址記帳：</p>
                 
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80 font-mono text-[11px] text-indigo-700 break-all">
+                    https://how-7719.github.io/my-budget-app/?amount=120&category=餐飲外食&note=午餐
+                </div>
+
                 <ol class="list-decimal list-inside space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
                     <li>開啟 iOS <strong>「捷徑 App」</strong> 並新建捷徑。</li>
                     <li>新增動作 <strong>「要求輸入」</strong>（提示：金額，類型：數字）。</li>
-                    <li>新增動作 <strong>「從選單中選擇」</strong>（選擇：餐飲、交通、娛樂）。</li>
-                    <li>綁定至 <strong>設定 > 輔助使用 > 觸控 > 輕點背面</strong>。</li>
+                    <li>新增動作 <strong>「從選單中選擇」</strong>（選擇：餐飲外食、交通、娛樂）。</li>
+                    <li>新增動作 <strong>「開啟 URL」</strong>，帶入上面格式的網址。</li>
+                    <li>前往 <strong>設定 > 輔助使用 > 觸控 > 輕點背面</strong> 綁定即可！</li>
                 </ol>
             </div>
 
@@ -364,8 +369,36 @@
         window.onload = function() {
             document.getElementById('tx-date').value = getTodayString();
             updateCategoryDropdown();
+            
+            // Handle URL Parameters for iOS Shortcut Auto-Add
+            checkAndHandleUrlParameters();
+
             renderAll();
         };
+
+        function checkAndHandleUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const qAmount = urlParams.get('amount');
+            const qCategory = urlParams.get('category');
+            const qNote = urlParams.get('note');
+            const qType = urlParams.get('type') || 'daily';
+
+            if (qAmount) {
+                const numAmount = Number(qAmount);
+                if (!isNaN(numAmount) && numAmount > 0) {
+                    state.transactions.unshift({
+                        id: Date.now(),
+                        amount: numAmount,
+                        category: qCategory || '餐飲外食',
+                        date: getTodayString(),
+                        type: qType,
+                        note: qNote || qCategory || 'iOS 捷徑快記'
+                    });
+                    localStorage.setItem('budget_tracker_state', JSON.stringify(state));
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
+        }
 
         function saveState() {
             localStorage.setItem('budget_tracker_state', JSON.stringify(state));
