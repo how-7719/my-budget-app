@@ -33,6 +33,14 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen antialiased pb-16">
 
+    <!-- Toast Notification Banner for iOS Shortcuts -->
+    <div id="toast-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 transform -translate-y-20 opacity-0 pointer-events-none">
+        <div class="bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-2.5">
+            <span id="toast-icon" class="text-emerald-400 text-sm"><i class="fa-solid fa-circle-check"></i></span>
+            <span id="toast-message">已完成自動記帳</span>
+        </div>
+    </div>
+
     <!-- Navigation Bar -->
     <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/80">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
@@ -408,32 +416,63 @@
             renderAll();
         };
 
-        function getTodayString() {
-            return new Date().toISOString().split('T')[0];
-        }
+        function showToast(message, isSuccess = true) {
+            const banner = document.getElementById('toast-banner');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
 
-        // Get start and end date string of current billing cycle
-        function getCurrentCycleRange() {
-            const today = new Date();
-            const startDay = Math.min(Math.max(1, state.cycleStartDay || 1), 28); // Cap at 28 to be safe across months
-            
-            let currentYear = today.getFullYear();
-            let currentMonth = today.getMonth(); // 0-indexed
-            
-            let startDate, endDate;
-
-            if (today.getDate() >= startDay) {
-                startDate = new Date(currentYear, currentMonth, startDay);
-                endDate = new Date(currentYear, currentMonth + 1, startDay - 1);
+            msgEl.innerText = message;
+            if (isSuccess) {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
             } else {
-                startDate = new Date(currentYear, currentMonth - 1, startDay);
-                endDate = new Date(currentYear, currentMonth, startDay - 1);
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-400"></i>';
             }
 
-            return {
-                startStr: formatDateStr(startDate),
-                endStr: formatDateStr(endDate)
-            };
+            banner.classList.remove('-translate-y-20', 'opacity-0', 'pointer-events-none');
+            banner.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                banner.classList.remove('translate-y-0', 'opacity-100');
+                banner.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3500);
+        }
+
+        function checkAndHandleUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const rawAmount = urlParams.get('amount');
+            if (!rawAmount) return;
+
+            // Sanitize and clean amount input (supports strings with symbols, spaces, or numbers)
+            const cleanedAmount = String(rawAmount).replace(/[^\d.]/g, '');
+            const numAmount = parseFloat(cleanedAmount);
+
+            if (!isNaN(numAmount) && numAmount > 0) {
+                const rawCategory = urlParams.get('category');
+                const qCategory = rawCategory ? decodeURIComponent(rawCategory) : '餐飲外食';
+                const rawNote = urlParams.get('note');
+                const qNote = rawNote ? decodeURIComponent(rawNote) : '';
+                const qType = urlParams.get('type') || 'daily';
+                const qDate = urlParams.get('date') || getTodayString();
+
+                state.transactions.unshift({
+                    id: Date.now(),
+                    amount: numAmount,
+                    category: qCategory,
+                    date: qDate,
+                    type: qType,
+                    note: qNote || qCategory || 'iOS 捷徑快記'
+                });
+
+                localStorage.setItem('budget_tracker_state', JSON.stringify(state));
+
+                // Clean URL parameters from address bar without reloading
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                // Show feedback banner
+                setTimeout(() => {
+                    showToast(`✅ 捷徑自動記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`);
+                }, 300);
+            }
         }
 
         function formatDateStr(dateObj) {
