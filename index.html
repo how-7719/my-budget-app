@@ -57,7 +57,7 @@
             <div class="flex items-center space-x-2">
                 <button onclick="toggleIosGuideModal()" class="text-xs px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition font-medium flex items-center gap-1.5">
                     <i class="fa-brands fa-apple text-sm"></i>
-                    <span class="hidden sm:inline">iOS 捷徑</span>
+                    <span class="hidden sm:inline">iOS 捷徑說明</span>
                 </button>
                 <button onclick="toggleSettingsModal()" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition font-semibold flex items-center gap-1.5 shadow-xs">
                     <i class="fa-solid fa-sliders text-xs"></i>
@@ -441,8 +441,14 @@
             fixed: ['住房租金', '水電瓦斯', '電話費/電信', '交通月票/加油', '訂閱服務', '保險其他']
         };
 
-        // FAILSAFE URL PARAMETER CHECK ON IMMEDIATE LOAD
-        (function handleUrlParametersImmediately() {
+        window.onload = function() {
+            document.getElementById('tx-date').value = getTodayString();
+            updateCategoryDropdown();
+            handleUrlParameters();
+            renderAll();
+        };
+
+        function handleUrlParameters() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a') || urlParams.get('money');
@@ -475,27 +481,14 @@
                         window.history.replaceState({}, document.title, window.location.pathname);
                     }
 
-                    // Show toast banner safely
-                    const triggerToast = () => {
+                    setTimeout(() => {
                         showToast(`✅ 捷徑記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`);
-                    };
-
-                    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                        setTimeout(triggerToast, 300);
-                    } else {
-                        window.addEventListener('DOMContentLoaded', () => setTimeout(triggerToast, 300));
-                    }
+                    }, 300);
                 }
             } catch (err) {
                 console.error("URL Params Parse Error:", err);
             }
-        })();
-
-        window.onload = function() {
-            document.getElementById('tx-date').value = getTodayString();
-            updateCategoryDropdown();
-            renderAll();
-        };
+        }
 
         function getCurrentCycleRange() {
             const today = new Date();
