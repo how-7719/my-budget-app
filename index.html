@@ -34,7 +34,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen antialiased pb-16">
 
     <!-- Toast Notification Banner for iOS Shortcuts -->
-    <div id="toast-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 transform -translate-y-20 opacity-0 pointer-events-none">
+    <div id="toast-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 transform -translate-y-20 opacity-0 pointer-events-none w-11/12 max-w-md">
         <div class="bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-2.5">
             <span id="toast-icon" class="text-emerald-400 text-sm"><i class="fa-solid fa-circle-check"></i></span>
             <span id="toast-message">已完成自動記帳</span>
@@ -376,9 +376,24 @@
     </div>
 
     <script>
+        function getTodayString() {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function formatDateStr(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         const DEFAULT_STATE = {
             income: 25000,
-            cycleStartDay: 1, // Start day of billing cycle (1-31)
+            cycleStartDay: 1,
             fixedExpenses: [
                 { id: 1, name: '宿舍/租金', amount: 7000, category: '住房' },
                 { id: 2, name: '水電瓦斯網路', amount: 1000, category: '帳單' },
@@ -396,7 +411,7 @@
         };
 
         let state = JSON.parse(localStorage.getItem('budget_tracker_state')) || DEFAULT_STATE;
-        if (!state.cycleStartDay) state.cycleStartDay = 1; // Fallback for existing users
+        if (!state.cycleStartDay) state.cycleStartDay = 1;
 
         let tempFixedExpenses = [];
         let budgetChart = null;
@@ -416,6 +431,29 @@
             renderAll();
         };
 
+        function getCurrentCycleRange() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            const currentDate = today.getDate();
+            const startDay = (state && state.cycleStartDay) ? Number(state.cycleStartDay) : 1;
+
+            let startDate, endDate;
+
+            if (currentDate >= startDay) {
+                startDate = new Date(currentYear, currentMonth, startDay);
+                endDate = new Date(currentYear, currentMonth + 1, startDay - 1);
+            } else {
+                startDate = new Date(currentYear, currentMonth - 1, startDay);
+                endDate = new Date(currentYear, currentMonth, startDay - 1);
+            }
+
+            return {
+                startStr: formatDateStr(startDate),
+                endStr: formatDateStr(endDate)
+            };
+        }
+
         function showToast(message, isSuccess = true) {
             const banner = document.getElementById('toast-banner');
             const msgEl = document.getElementById('toast-message');
@@ -434,23 +472,24 @@
             setTimeout(() => {
                 banner.classList.remove('translate-y-0', 'opacity-100');
                 banner.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
-            }, 3500);
+            }, 4000);
         }
 
         function checkAndHandleUrlParameters() {
             const urlParams = new URLSearchParams(window.location.search);
-            const rawAmount = urlParams.get('amount');
+            const rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a');
             if (!rawAmount) return;
 
-            // Sanitize and clean amount input (supports strings with symbols, spaces, or numbers)
             const cleanedAmount = String(rawAmount).replace(/[^\d.]/g, '');
             const numAmount = parseFloat(cleanedAmount);
 
             if (!isNaN(numAmount) && numAmount > 0) {
-                const rawCategory = urlParams.get('category');
+                const rawCategory = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c');
                 const qCategory = rawCategory ? decodeURIComponent(rawCategory) : '餐飲外食';
-                const rawNote = urlParams.get('note');
-                const qNote = rawNote ? decodeURIComponent(rawNote) : '';
+                
+                const rawNote = urlParams.get('note') || urlParams.get('n');
+                const qNote = rawNote ? decodeURIComponent(rawNote) : 'iOS 捷徑快記';
+                
                 const qType = urlParams.get('type') || 'daily';
                 const qDate = urlParams.get('date') || getTodayString();
 
@@ -460,50 +499,17 @@
                     category: qCategory,
                     date: qDate,
                     type: qType,
-                    note: qNote || qCategory || 'iOS 捷徑快記'
+                    note: qNote
                 });
 
                 localStorage.setItem('budget_tracker_state', JSON.stringify(state));
 
-                // Clean URL parameters from address bar without reloading
+                // Clean URL parameters without page reload
                 window.history.replaceState({}, document.title, window.location.pathname);
 
-                // Show feedback banner
                 setTimeout(() => {
                     showToast(`✅ 捷徑自動記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`);
                 }, 300);
-            }
-        }
-
-        function formatDateStr(dateObj) {
-            const y = dateObj.getFullYear();
-            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const d = String(dateObj.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        }
-
-        function checkAndHandleUrlParameters() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const qAmount = urlParams.get('amount');
-            const qCategory = urlParams.get('category');
-            const qNote = urlParams.get('note');
-            const qType = urlParams.get('type') || 'daily';
-            const qDate = urlParams.get('date') || getTodayString();
-
-            if (qAmount) {
-                const numAmount = Number(qAmount);
-                if (!isNaN(numAmount) && numAmount > 0) {
-                    state.transactions.unshift({
-                        id: Date.now(),
-                        amount: numAmount,
-                        category: qCategory || '餐飲外食',
-                        date: qDate,
-                        type: qType,
-                        note: qNote || qCategory || 'iOS 捷徑快記'
-                    });
-                    localStorage.setItem('budget_tracker_state', JSON.stringify(state));
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }
             }
         }
 
@@ -520,12 +526,10 @@
             const todayStr = getTodayString();
             const cycleRange = getCurrentCycleRange();
 
-            // Today's daily spending
             const todayDailySpent = state.transactions
                 .filter(t => t.date === todayStr && t.type === 'daily')
                 .reduce((sum, t) => sum + Number(t.amount), 0);
 
-            // Current Billing Cycle daily spending
             const cycleDailySpent = state.transactions
                 .filter(t => t.type === 'daily' && t.date >= cycleRange.startStr && t.date <= cycleRange.endStr)
                 .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -548,7 +552,6 @@
         function renderAll() {
             const metrics = calculateBudgetMetrics();
 
-            // Daily Budget Metrics
             document.getElementById('today-remaining-amount').innerText = `NT$ ${metrics.todayRemaining.toLocaleString()}`;
             document.getElementById('today-spent-amount').innerText = `NT$ ${metrics.todayDailySpent.toLocaleString()}`;
             document.getElementById('today-target-budget').innerText = `NT$ ${metrics.baseDailyBudget.toLocaleString()}`;
@@ -569,7 +572,6 @@
                 statusBadge.innerText = "今日已超額";
             }
 
-            // Fixed & Investment Metrics
             document.getElementById('total-fixed-display').innerText = `NT$ ${metrics.totalFixedBudget.toLocaleString()}`;
             const fixedCount = state.fixedExpenses.length;
             document.getElementById('fixed-count-text').innerText = fixedCount > 0 ? `包含 ${fixedCount} 項固定扣款` : '尚未設定固定開銷';
@@ -586,7 +588,6 @@
                 healthTag.innerText = "預估未達標";
             }
 
-            // Summaries
             document.getElementById('summary-income').innerText = `NT$ ${state.income.toLocaleString()}`;
             document.getElementById('summary-fixed').innerText = `NT$ ${metrics.totalFixedBudget.toLocaleString()}`;
             document.getElementById('summary-daily-total').innerText = `NT$ ${metrics.totalDailyPool.toLocaleString()}`;
@@ -672,7 +673,6 @@
             optAll.innerText = '所有歷史紀錄';
             select.appendChild(optAll);
 
-            // Extract unique Year-Months from transactions
             const monthsSet = new Set();
             state.transactions.forEach(t => {
                 if (t.date && t.date.length >= 7) {
@@ -701,10 +701,8 @@
             const cycleRange = getCurrentCycleRange();
 
             const filtered = state.transactions.filter(t => {
-                // Type filter
                 if (filterType !== 'all' && t.type !== filterType) return false;
 
-                // Month/Cycle filter
                 if (filterMonth === 'current_cycle') {
                     return t.date >= cycleRange.startStr && t.date <= cycleRange.endStr;
                 } else if (filterMonth === 'all_time') {
@@ -714,7 +712,6 @@
                 }
             });
 
-            // Sort transactions newest date first
             filtered.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
 
             if (filtered.length === 0) {
