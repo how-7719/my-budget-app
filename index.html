@@ -322,7 +322,7 @@
                 <!-- Savings and Investment Goals -->
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block font-semibold text-slate-700 mb-1">🛡️️ 緊急預備金</label>
+                        <label class="block font-semibold text-slate-700 mb-1">🛡 緊急預備金</label>
                         <input type="number" id="setting-savings" required min="0" class="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium">
                     </div>
                     <div>
@@ -375,7 +375,7 @@
                     </div>
                     <ul class="list-disc list-inside space-y-1 text-[11px] text-rose-800 font-medium">
                         <li><strong>捷徑綁錯變數：</strong> 請確保 `category=` 綁定的是藍色的 **「選單結果」**，不能再次選成金額 `要求的輸入`！</li>
-                        <li><strong>捷徑用錯動作：</strong> 請選擇「開啟 URL」，**不能選擇**「取得 URL 內容」(背景抓取無法執行 JavaScript)。</li>
+                        <li><strong>主畫面 App 資料隔離：</strong> 若你將網頁加入主畫面，請直接透過 Safari 瀏覽器打開與捷徑連動，兩者資料才能完全共用！</li>
                     </ul>
                 </div>
 
@@ -408,6 +408,23 @@
             const m = String(dateObj.getMonth() + 1).padStart(2, '0');
             const d = String(dateObj.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
+        }
+
+        function normalizeFullWidthDigits(str) {
+            return String(str || '').replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0));
+        }
+
+        function normalizeDateStr(dateStr) {
+            if (!dateStr) return getTodayString();
+            let cleaned = String(dateStr).trim().replace(/\//g, '-');
+            const parts = cleaned.split('-');
+            if (parts.length === 3) {
+                const y = parts[0];
+                const m = parts[1].padStart(2, '0');
+                const d = parts[2].padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return getTodayString();
         }
 
         const CATEGORY_MAP = {
@@ -484,22 +501,50 @@
 
         function handleUrlParameters() {
             try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a') || urlParams.get('money');
+                let searchStr = window.location.search || '';
+                if (!searchStr && window.location.hash.includes('?')) {
+                    searchStr = window.location.hash.substring(window.location.hash.indexOf('?'));
+                } else if (!searchStr && window.location.hash.includes('&')) {
+                    searchStr = '?' + window.location.hash.substring(1);
+                }
+
+                if (!searchStr || searchStr.length < 2) return;
+
+                let rawAmount = null, rawCat = null, rawNote = null, rawDate = null, rawType = null;
+
+                try {
+                    const urlParams = new URLSearchParams(searchStr);
+                    rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a') || urlParams.get('money') || urlParams.get('val');
+                    rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c');
+                    rawNote = urlParams.get('note') || urlParams.get('n') || urlParams.get('memo');
+                    rawDate = urlParams.get('date') || urlParams.get('d');
+                    rawType = urlParams.get('type') || urlParams.get('t');
+                } catch(e) {
+                    console.warn("URLSearchParams parse error, fallback to regex:", e);
+                    const matchAmt = searchStr.match(/[?&](?:amount|amt|a|money|val)=([^&]*)/i);
+                    if (matchAmt) rawAmount = matchAmt[1];
+                    const matchCat = searchStr.match(/[?&](?:category|cat|c)=([^&]*)/i);
+                    if (matchCat) rawCat = matchCat[1];
+                    const matchNote = searchStr.match(/[?&](?:note|n|memo)=([^&]*)/i);
+                    if (matchNote) rawNote = matchNote[1];
+                    const matchDate = searchStr.match(/[?&](?:date|d)=([^&]*)/i);
+                    if (matchDate) rawDate = matchDate[1];
+                }
+
                 if (!rawAmount) return;
 
-                const cleanedAmount = String(rawAmount).replace(/[^\d.]/g, '');
+                const normalizedAmtStr = normalizeFullWidthDigits(rawAmount);
+                const cleanedAmount = normalizedAmtStr.replace(/[^\d.]/g, '');
                 const numAmount = parseFloat(cleanedAmount);
 
                 if (!isNaN(numAmount) && numAmount > 0) {
-                    let rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c');
                     let qCategory = '餐飲';
 
                     if (rawCat) {
                         try {
                             rawCat = decodeURIComponent(rawCat).trim();
                         } catch(e) {
-                            rawCat = rawCat.trim();
+                            rawCat = String(rawCat).trim();
                         }
 
                         if (!/^\d+$/.test(rawCat)) {
@@ -513,18 +558,23 @@
                         }
                     }
                     
-                    const rawNote = urlParams.get('note') || urlParams.get('n');
                     let finalNote = qCategory;
                     if (rawNote && rawNote.trim() !== '' && rawNote !== 'iOS 捷徑快記' && !/^\d+$/.test(rawNote)) {
                         try {
                             finalNote = decodeURIComponent(rawNote).trim();
                         } catch(e) {
-                            finalNote = rawNote.trim();
+                            finalNote = String(rawNote).trim();
                         }
                     }
 
-                    const qType = urlParams.get('type') || 'daily';
-                    const qDate = urlParams.get('date') || getTodayString();
+                    const qType = rawType || 'daily';
+                    const qDate = normalizeDateStr(rawDate);
+
+                    // Prevent duplicate execution on rapid auto reload
+                    const lastTx = state.transactions[0];
+                    if (lastTx && lastTx.amount === numAmount && lastTx.category === qCategory && lastTx.note === finalNote && (Date.now() - lastTx.id < 3000)) {
+                        return;
+                    }
 
                     state.transactions.unshift({
                         id: Date.now(),
@@ -539,6 +589,12 @@
 
                     if (window.history && window.history.replaceState) {
                         window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+
+                    // Reset filter dropdown to force display of newly added record
+                    const filterMonthEl = document.getElementById('filter-month');
+                    if (filterMonthEl) {
+                        filterMonthEl.value = 'current_cycle';
                     }
 
                     renderAll();
