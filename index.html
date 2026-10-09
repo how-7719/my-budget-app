@@ -400,12 +400,12 @@
                 <!-- Critical Failure Reasons -->
                 <div class="bg-rose-50 p-3 rounded-xl border border-rose-200/80 space-y-1.5">
                     <div class="font-bold text-rose-900 flex items-center gap-1 text-[11px]">
-                        <i class="fa-solid fa-triangle-exclamation"></i> 捷徑點擊無反應或提示金額無效：
+                        <i class="fa-solid fa-triangle-exclamation"></i> 分類一直顯示為 food？
                     </div>
                     <ol class="list-decimal list-inside space-y-1 text-[11px] text-rose-800 font-medium leading-relaxed">
-                        <li><strong>選錯動作 (最常見)</strong>：捷徑最後一步必須是 <span class="bg-rose-200 px-1 rounded font-bold">「開啟 URL」</span>！不能選成「取得 URL 內容」(背景抓取無法執行 JavaScript)。</li>
-                        <li><strong>標籤接錯</strong>：請長按第一個「要求的輸入」選擇重新命名為「金額」，第二個重命名為「備註」，確保網址中 `&category=` 後面接的是「選單結果」！</li>
-                        <li><strong>Safari 與桌面 App 資料隔離</strong>：iOS 將「加入主畫面」的圖示視為獨立 App，而捷徑會在 Safari 開啟。請直接在 Safari 中打開網頁記帳，資料才會連動！</li>
+                        <li><strong>綁錯變數 (關鍵點)</strong>：捷徑中的 <span class="bg-rose-200 px-1 rounded font-bold">&category=</span> 後面接到了「金額」數字。請重新點選改接成藍色的 <span class="bg-emerald-200 px-1 rounded font-bold">「選單結果」</span>！</li>
+                        <li><strong>選錯捷徑動作</strong>：捷徑最後一步必須是 <span class="bg-rose-200 px-1 rounded font-bold">「開啟 URL」</span>（不可選「取得 URL 內容」）。</li>
+                        <li><strong>Safari 與桌面 App 資料隔離</strong>：請直接在 Safari 中打開網頁記帳，資料才會與捷徑連動！</li>
                     </ol>
                 </div>
 
@@ -652,7 +652,7 @@
                         qCategory = decodedCatClean;
                     }
                 } else {
-                    // Force default fallback to 'food' if category was pure numbers
+                    // Force default fallback to 'food' if category was pure numbers (meaning user bound Amount to Category)
                     qCategory = 'food';
                 }
 
