@@ -501,11 +501,16 @@
 
         function handleUrlParameters() {
             try {
+                // 強制重新載入最新的 LocalStorage 狀態，防止被舊狀態覆蓋
+                state = getSafeLocalStorage('budget_tracker_state', DEFAULT_STATE);
+
                 let searchStr = window.location.search || '';
                 if (!searchStr && window.location.hash.includes('?')) {
                     searchStr = window.location.hash.substring(window.location.hash.indexOf('?'));
                 } else if (!searchStr && window.location.hash.includes('&')) {
                     searchStr = '?' + window.location.hash.substring(1);
+                } else if (!searchStr && window.location.href.includes('?')) {
+                    searchStr = '?' + window.location.href.split('?')[1];
                 }
 
                 if (!searchStr || searchStr.length < 2) return;
@@ -570,9 +575,9 @@
                     const qType = rawType || 'daily';
                     const qDate = normalizeDateStr(rawDate);
 
-                    // Prevent duplicate execution on rapid auto reload
+                    // 防止短時間內重複觸發 (1.5秒內)
                     const lastTx = state.transactions[0];
-                    if (lastTx && lastTx.amount === numAmount && lastTx.category === qCategory && lastTx.note === finalNote && (Date.now() - lastTx.id < 3000)) {
+                    if (lastTx && lastTx.amount === numAmount && lastTx.category === qCategory && lastTx.note === finalNote && (Date.now() - lastTx.id < 1500)) {
                         return;
                     }
 
@@ -591,7 +596,7 @@
                         window.history.replaceState({}, document.title, window.location.pathname);
                     }
 
-                    // Reset filter dropdown to force display of newly added record
+                    // 強制將歷史篩選切換回「當前週期」
                     const filterMonthEl = document.getElementById('filter-month');
                     if (filterMonthEl) {
                         filterMonthEl.value = 'current_cycle';
@@ -1076,6 +1081,14 @@
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 handleUrlParameters();
+            }
+        });
+
+        // 跨頁面與背景自動同步監聽
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'budget_tracker_state') {
+                state = getSafeLocalStorage('budget_tracker_state', DEFAULT_STATE);
+                renderAll();
             }
         });
     </script>
