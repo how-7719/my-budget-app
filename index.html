@@ -1,1 +1,1135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧記帳與理財分析系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font Inter / Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen antialiased pb-16">
 
+    <!-- Toast Notification Banner for iOS Shortcuts -->
+    <div id="toast-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 transform -translate-y-20 opacity-0 pointer-events-none w-11/12 max-w-md">
+        <div class="bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-3.5 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+                <span id="toast-icon" class="text-emerald-400 text-base"><i class="fa-solid fa-circle-check"></i></span>
+                <span id="toast-message">已完成自動記帳</span>
+            </div>
+            <button onclick="dismissToast()" class="text-slate-400 hover:text-white text-xs px-2 py-1">關閉</button>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/80">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm text-slate-900 leading-tight">Finance Tracker</h1>
+                    <p class="text-[10px] text-slate-400 font-medium">動態預算與理財分析</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleIosGuideModal()" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition font-semibold flex items-center gap-1.5">
+                    <i class="fa-brands fa-apple text-sm"></i>
+                    <span>捷徑除錯指南</span>
+                </button>
+                <button onclick="toggleSettingsModal()" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition font-semibold flex items-center gap-1.5 shadow-xs">
+                    <i class="fa-solid fa-sliders text-xs"></i>
+                    <span class="hidden sm:inline">設定收入與開銷</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 mt-5 space-y-5">
+
+        <!-- Key Metrics 3-Column Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Daily Budget Metric -->
+            <div id="today-budget-card" class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">今日預算剩餘額度</span>
+                        <span id="budget-status-badge" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            預算充裕
+                        </span>
+                    </div>
+                    <div class="text-3xl font-bold text-slate-900 tracking-tight my-1" id="today-remaining-amount">NT$ 0</div>
+                </div>
+
+                <div class="mt-3 space-y-1.5">
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div id="today-progress-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between text-[11px] text-slate-500 font-medium">
+                        <span>已花: <strong id="today-spent-amount" class="text-slate-700">NT$ 0</strong></span>
+                        <span>每日目標: <span id="today-target-budget" class="text-slate-600">NT$ 0</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fixed Expenses Metric -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">固定與必要開銷</span>
+                        <button onclick="toggleSettingsModal('fixed')" class="text-[11px] text-indigo-600 font-semibold bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md transition flex items-center gap-1">
+                            <i class="fa-solid fa-pen-to-square text-[10px]"></i> 設定開銷
+                        </button>
+                    </div>
+                    <div class="text-3xl font-bold text-slate-900 tracking-tight my-1" id="total-fixed-display">NT$ 0</div>
+                </div>
+                <div class="text-[11px] text-slate-500 font-medium flex justify-between items-center pt-2 border-t border-slate-100">
+                    <span id="fixed-count-text">含房租、水電、通訊、交通</span>
+                    <button onclick="toggleSettingsModal('fixed')" class="text-indigo-600 font-semibold hover:underline">管理明細</button>
+                </div>
+            </div>
+
+            <!-- Projected Investment Metric -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">月底預估可投入投資</span>
+                        <i class="fa-solid fa-chart-line text-indigo-500 text-sm"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-indigo-600 tracking-tight my-1" id="projected-investment-display">NT$ 0</div>
+                </div>
+                <div class="text-[11px] text-slate-500 font-medium flex justify-between items-center pt-2 border-t border-slate-100">
+                    <span>目標: <span id="target-investment-text" class="font-semibold text-slate-700">NT$ 0</span></span>
+                    <span id="investment-health-tag" class="text-emerald-600 font-semibold">100% 達標</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Streamlined Quick Transaction Bar -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-xs uppercase tracking-wider text-slate-500">⚡ 快速手動記帳</span>
+                </div>
+                <div class="flex bg-slate-100 p-0.5 rounded-lg text-xs font-medium">
+                    <button id="type-btn-daily" type="button" onclick="setTransactionType('daily')" class="px-2.5 py-1 rounded-md bg-white text-indigo-600 shadow-xs font-semibold transition">
+                        🍕 日常開銷
+                    </button>
+                    <button id="type-btn-fixed" type="button" onclick="setTransactionType('fixed')" class="px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-800 transition">
+                        🏠 固定支出
+                    </button>
+                </div>
+            </div>
+
+            <form id="add-transaction-form" onsubmit="handleAddTransaction(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                <input type="hidden" id="tx-type" value="daily">
+
+                <!-- Editable Date Selection -->
+                <div class="sm:col-span-3">
+                    <input type="date" id="tx-date" required class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs font-semibold text-slate-700 bg-white">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <input type="number" id="tx-amount" required min="1" placeholder="金額 NT$" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <select id="tx-category" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs text-slate-700 bg-white font-medium">
+                        <!-- Options injected dynamically -->
+                    </select>
+                </div>
+
+                <div class="sm:col-span-3">
+                    <input type="text" id="tx-note" placeholder="備註 (留空預設為分類)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-xs">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <button type="submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition shadow-xs flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-plus text-xs"></i> 記錄
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Content Split: Transaction Table & Overview Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            
+            <!-- Left: Transaction History List with Month Filter -->
+            <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+                <div class="flex flex-wrap items-center justify-between pb-2 border-b border-slate-100 gap-2">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-bold text-sm text-slate-800">消費明細紀錄</h3>
+                        <span id="current-cycle-badge" class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md font-semibold">
+                            當前週期
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <!-- Filter Month/Cycle -->
+                        <select id="filter-month" onchange="renderTransactions()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white focus:outline-none font-medium">
+                            <!-- Populated dynamically -->
+                        </select>
+
+                        <!-- Filter Type -->
+                        <select id="filter-type" onchange="renderTransactions()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white focus:outline-none font-medium">
+                            <option value="all">全部類型</option>
+                            <option value="daily">僅日常變動</option>
+                            <option value="fixed">僅固定扣款</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="text-slate-400 uppercase text-[10px] font-semibold border-b border-slate-100">
+                            <tr>
+                                <th class="py-2 px-2">日期</th>
+                                <th class="py-2 px-2">分類</th>
+                                <th class="py-2 px-2">備註</th>
+                                <th class="py-2 px-2 text-right">金額</th>
+                                <th class="py-2 px-2 text-center">刪除</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-list-body" class="divide-y divide-slate-100 font-medium">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Right: Allocation Chart & Breakdown -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4">
+                <h3 class="font-bold text-sm text-slate-800">本月資金配置概況</h3>
+
+                <div class="relative h-40 flex items-center justify-center">
+                    <canvas id="budgetChart"></canvas>
+                </div>
+
+                <div class="space-y-1.5 text-xs font-medium">
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-slate-50">
+                        <span class="text-slate-500 flex items-center gap-1.5">
+                            月總收入/生活費
+                            <button type="button" onclick="toggleSettingsModal('income')" class="text-slate-400 hover:text-indigo-600 transition" title="點擊修改月收入">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                        </span>
+                        <strong id="summary-income" class="text-slate-800">NT$ 0</strong>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50">
+                        <span class="text-slate-500">固定與必要開銷</span>
+                        <strong id="summary-fixed" class="text-indigo-600">NT$ 0</strong>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50">
+                        <span class="text-slate-500">可用日常生活費</span>
+                        <strong id="summary-daily-total" class="text-amber-600">NT$ 0</strong>
+                    </div>
+                    <div class="flex justify-between p-2 rounded-lg bg-slate-50">
+                        <span class="text-slate-500">預留儲蓄與投資額</span>
+                        <strong id="summary-savings" class="text-emerald-600">NT$ 0</strong>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- MODAL 1: Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm">財務設定：每月收入與起算週期</h3>
+                    <p class="text-[10px] text-slate-400 mt-0.5">自訂每月收入、發薪重置日、固定扣款與投資目標</p>
+                </div>
+                <button type="button" onclick="toggleSettingsModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="saveSettings(event)" class="space-y-4 text-xs">
+                <!-- Monthly Income Field -->
+                <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/80 space-y-1">
+                    <label class="block font-bold text-indigo-900 mb-1 flex items-center justify-between">
+                        <span>💰 每月總收入 / 生活費 (NT$)</span>
+                        <span class="text-[10px] font-normal text-indigo-600">主要資金來源</span>
+                    </label>
+                    <input type="number" id="setting-income" required min="0" placeholder="例如：25000" class="w-full px-3 py-2 bg-white rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-bold text-base text-indigo-700">
+                </div>
+
+                <!-- Billing Cycle Reset Day -->
+                <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-100/80 space-y-1">
+                    <label class="block font-bold text-amber-900 mb-1 flex items-center justify-between">
+                        <span>📅 每月記帳起算日 (發薪/重置日)</span>
+                        <span class="text-[10px] font-normal text-amber-700">每月固定幾號重新算</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-600 font-semibold">每月</span>
+                        <input type="number" id="setting-cycle-start" required min="1" max="31" placeholder="1" class="w-20 px-3 py-1.5 bg-white rounded-xl border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-bold text-sm text-amber-800 text-center">
+                        <span class="text-slate-600 font-semibold">號開始新一期預算</span>
+                    </div>
+                </div>
+
+                <!-- Fixed Expenses List Management -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-2.5">
+                    <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
+                        <div>
+                            <label class="block font-bold text-slate-800">🏠 固定與必要開銷清單</label>
+                            <span class="text-[10px] text-slate-400">房租、水電、電話費、TPASS 交通月票等</span>
+                        </div>
+                        <button type="button" onclick="addFixedExpenseRow()" class="text-[11px] bg-indigo-600 text-white font-semibold px-2.5 py-1 rounded-lg hover:bg-indigo-700 transition flex items-center gap-1 shadow-xs">
+                            <i class="fa-solid fa-plus text-[10px]"></i> 新增項目
+                        </button>
+                    </div>
+
+                    <div id="fixed-expense-rows" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <!-- Dynamic expense rows injected by JavaScript -->
+                    </div>
+
+                    <div class="flex justify-between items-center text-xs font-semibold text-slate-600 pt-1 border-t border-slate-200/60">
+                        <span>固定開銷小計：</span>
+                        <span id="fixed-expenses-subtotal" class="text-indigo-600 font-bold text-sm">NT$ 0</span>
+                    </div>
+                </div>
+
+                <!-- Savings and Investment Goals -->
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">🛡 緊急預備金</label>
+                        <input type="number" id="setting-savings" required min="0" class="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">📈 目標投資額 (ETF)</label>
+                        <input type="number" id="setting-investment" required min="0" class="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-semibold text-indigo-600">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">📅 當月預算分配天數</label>
+                    <input type="number" id="setting-days" required min="28" max="31" class="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium">
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" onclick="toggleSettingsModal()" class="px-3.5 py-1.5 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition">取消</button>
+                    <button type="submit" class="px-5 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold shadow-sm hover:bg-indigo-700 transition">儲存變更</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: iOS Shortcut Debug & Setup Guide -->
+    <div id="ios-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-3">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                    <i class="fa-brands fa-apple text-emerald-600 text-base"></i> iOS 捷徑失敗終極排查指南
+                </h3>
+                <button type="button" onclick="toggleIosGuideModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3.5 text-xs text-slate-600">
+                
+                <!-- Quick Test Section -->
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200/80 space-y-2">
+                    <div class="font-bold text-emerald-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-vial"></i> 實時測試網址帶入功能
+                    </div>
+                    <p class="text-[11px] text-emerald-800">點擊下方按鈕測試系統能否自動寫入 120 元便當：</p>
+                    <button onclick="simulateShortcutAutoLog()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition shadow-xs flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-bolt"></i> 一鍵模擬 iOS 捷徑寫入 (NT$120)
+                    </button>
+                </div>
+
+                <!-- Live URL Generator & Direct Link Tester -->
+                <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 space-y-2">
+                    <div class="font-bold text-indigo-900 text-[11px] flex items-center gap-1">
+                        <i class="fa-solid fa-link"></i> 捷徑網址測試生成器
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[11px]">
+                        <div>
+                            <label class="block text-slate-500 mb-0.5">測試金額</label>
+                            <input type="number" id="test-gen-amount" value="85" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 mb-0.5">測試分類</label>
+                            <select id="test-gen-cat" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg font-bold">
+                                <option value="food">food (餐飲)</option>
+                                <option value="drink">drink (飲料)</option>
+                                <option value="daily">daily (日常)</option>
+                                <option value="traffic">traffic (交通)</option>
+                                <option value="play">play (娛樂)</option>
+                                <option value="shopping">shopping (購物)</option>
+                                <option value="other">other (其他)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="testGeneratedUrl()" class="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition text-xs flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> 開啟此網址測試 (模擬捷徑)
+                    </button>
+                </div>
+
+                <!-- Critical Failure Reasons -->
+                <div class="bg-rose-50 p-3 rounded-xl border border-rose-200/80 space-y-1.5">
+                    <div class="font-bold text-rose-900 flex items-center gap-1 text-[11px]">
+                        <i class="fa-solid fa-triangle-exclamation"></i> 捷徑點擊無反應或提示金額無效：
+                    </div>
+                    <ol class="list-decimal list-inside space-y-1 text-[11px] text-rose-800 font-medium leading-relaxed">
+                        <li><strong>選錯動作 (最常見)</strong>：捷徑最後一步必須是 <span class="bg-rose-200 px-1 rounded font-bold">「開啟 URL」</span>！不能選成「取得 URL 內容」(背景抓取無法執行 JavaScript)。</li>
+                        <li><strong>變數順序接錯</strong>：請確認 `?amount=` 後面接的是第一個要求輸入（金額），`&note=` 後面才是備註輸入！</li>
+                        <li><strong>Safari 與桌面 App 資料隔離</strong>：iOS 將「加入主畫面」的圖示視為獨立 App，而捷徑會在 Safari 開啟。請直接在 Safari 中打開網頁記帳，資料才會連動！</li>
+                    </ol>
+                </div>
+
+                <div class="space-y-1.5">
+                    <div class="font-bold text-slate-800 text-[11px]">最穩定的捷徑網址格式 (請複製貼入捷徑「開啟 URL」)：</div>
+                    <div class="bg-slate-900 text-emerald-400 p-2.5 rounded-xl font-mono text-[10px] break-all select-all">
+                        https://how-7719.github.io/my-budget-app/?amount=🔵要求的輸入&category=food&note=🔵要求的輸入
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-4 text-right">
+                <button type="button" onclick="toggleIosGuideModal()" class="px-4 py-1.5 rounded-xl bg-slate-900 text-white font-semibold text-xs">我知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        function getTodayString() {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function formatDateStr(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function normalizeFullWidthDigits(str) {
+            return String(str || '').replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xfee0));
+        }
+
+        function normalizeDateStr(dateStr) {
+            if (!dateStr) return getTodayString();
+            let cleaned = String(dateStr).trim().replace(/\//g, '-');
+            const parts = cleaned.split('-');
+            if (parts.length === 3) {
+                const y = parts[0];
+                const m = parts[1].padStart(2, '0');
+                const d = parts[2].padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return getTodayString();
+        }
+
+        const CATEGORY_MAP = {
+            'food': '餐飲',
+            'drink': '飲料',
+            'daily': '日常',
+            'traffic': '交通',
+            'play': '娛樂',
+            'shopping': '購物',
+            'other': '其他',
+            'breakfast': '餐飲',
+            'lunch': '餐飲',
+            'dinner': '餐飲',
+            'coffee': '飲料',
+            '餐飲外食': '餐飲',
+            '餐飲': '餐飲',
+            '飲料零食': '飲料',
+            '飲料': '飲料',
+            '日常用品': '日常',
+            '日常': '日常',
+            '交通交通': '交通',
+            '交通': '交通',
+            '娛樂社交': '娛樂',
+            '娛樂': '娛樂',
+            '購物治裝': '購物',
+            '購物': '購物',
+            '其他變動': '其他',
+            '其他': '其他'
+        };
+
+        const DEFAULT_STATE = {
+            income: 25000,
+            cycleStartDay: 1,
+            fixedExpenses: [
+                { id: 1, name: '宿舍/租金', amount: 7000, category: '住房' },
+                { id: 2, name: '水電瓦斯網路', amount: 1000, category: '水電' },
+                { id: 3, name: '電話費/電信月租', amount: 499, category: '電信' },
+                { id: 4, name: 'TPASS/交通定期票', amount: 1200, category: '交通' }
+            ],
+            savingsTarget: 2000,
+            investmentTarget: 4000,
+            daysInMonth: 30,
+            transactions: [
+                { id: 101, date: getTodayString(), amount: 110, category: '餐飲', type: 'daily', note: '午餐排骨飯' },
+                { id: 102, date: getTodayString(), amount: 60, category: '飲料', type: 'daily', note: '拿鐵咖啡' },
+                { id: 103, date: getTodayString(), amount: 499, category: '電信', type: 'fixed', note: '電信帳單' }
+            ]
+        };
+
+        function getSafeLocalStorage(key, defaultVal) {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : defaultVal;
+            } catch(e) {
+                console.warn("LocalStorage read restricted:", e);
+                return defaultVal;
+            }
+        }
+
+        function setSafeLocalStorage(key, val) {
+            try {
+                localStorage.setItem(key, JSON.stringify(val));
+            } catch(e) {
+                console.warn("LocalStorage write restricted:", e);
+            }
+        }
+
+        let state = getSafeLocalStorage('budget_tracker_state', DEFAULT_STATE);
+        if (!state.cycleStartDay) state.cycleStartDay = 1;
+
+        let tempFixedExpenses = [];
+        let budgetChart = null;
+
+        const CATEGORIES = {
+            daily: ['餐飲', '飲料', '日常', '交通', '娛樂', '購物', '其他'],
+            fixed: ['住房', '水電', '電信', '交通', '訂閱', '保險']
+        };
+
+        function toggleIosGuideModal() {
+            const modal = document.getElementById('ios-modal');
+            if (modal) modal.classList.toggle('hidden');
+        }
+
+        function toggleSettingsModal(focusTarget) {
+            const modal = document.getElementById('settings-modal');
+            if (!modal) return;
+            modal.classList.toggle('hidden');
+
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('setting-income').value = state.income;
+                document.getElementById('setting-cycle-start').value = state.cycleStartDay || 1;
+                document.getElementById('setting-savings').value = state.savingsTarget;
+                document.getElementById('setting-investment').value = state.investmentTarget;
+                document.getElementById('setting-days').value = state.daysInMonth;
+
+                tempFixedExpenses = JSON.parse(JSON.stringify(state.fixedExpenses));
+                renderFixedExpenseRows();
+
+                if (focusTarget === 'income') {
+                    setTimeout(() => document.getElementById('setting-income').focus(), 100);
+                }
+            }
+        }
+
+        function testGeneratedUrl() {
+            const amt = document.getElementById('test-gen-amount').value || '85';
+            const cat = document.getElementById('test-gen-cat').value || 'food';
+            const testUrl = `${window.location.origin}${window.location.pathname}?amount=${amt}&category=${cat}&note=捷徑測試`;
+            window.location.href = testUrl;
+        }
+
+        function simulateShortcutAutoLog() {
+            const numAmount = 120;
+            const qCategory = '餐飲';
+            state.transactions.unshift({
+                id: Date.now(),
+                amount: numAmount,
+                category: qCategory,
+                date: getTodayString(),
+                type: 'daily',
+                note: '自動測試便當'
+            });
+
+            saveState();
+            toggleIosGuideModal();
+            showToast(`✅ 模擬捷徑記帳成功！NT$ ${numAmount} (${qCategory})`);
+        }
+
+        function handleUrlParameters() {
+            try {
+                state = getSafeLocalStorage('budget_tracker_state', DEFAULT_STATE);
+
+                let rawUrl = window.location.href;
+                let searchStr = window.location.search || '';
+                
+                if (!searchStr && rawUrl.includes('?')) {
+                    searchStr = '?' + rawUrl.split('?')[1];
+                }
+
+                if (!searchStr || searchStr.length < 2) return;
+
+                searchStr = searchStr.replace(/&amp;/g, '&');
+
+                let rawAmount = null, rawCat = null, rawNote = null, rawDate = null, rawType = null;
+
+                try {
+                    const urlParams = new URLSearchParams(searchStr);
+                    rawAmount = urlParams.get('amount') || urlParams.get('amt') || urlParams.get('a') || urlParams.get('money') || urlParams.get('val');
+                    rawCat = urlParams.get('category') || urlParams.get('cat') || urlParams.get('c');
+                    rawNote = urlParams.get('note') || urlParams.get('n') || urlParams.get('memo');
+                    rawDate = urlParams.get('date') || urlParams.get('d');
+                    rawType = urlParams.get('type') || urlParams.get('t');
+                } catch(e) {
+                    console.warn("URLSearchParams parse error, fallback to regex:", e);
+                    const matchAmt = searchStr.match(/[?&](?:amount|amt|a|money|val)=([^&]*)/i);
+                    if (matchAmt) rawAmount = matchAmt[1];
+                    const matchCat = searchStr.match(/[?&](?:category|cat|c)=([^&]*)/i);
+                    if (matchCat) rawCat = matchCat[1];
+                    const matchNote = searchStr.match(/[?&](?:note|n|memo)=([^&]*)/i);
+                    if (matchNote) rawNote = matchNote[1];
+                    const matchDate = searchStr.match(/[?&](?:date|d)=([^&]*)/i);
+                    if (matchDate) rawDate = matchDate[1];
+                }
+
+                if (!rawAmount && !rawCat && !rawNote) return;
+
+                let decodedAmt = rawAmount ? decodeURIComponent(rawAmount).trim() : '';
+                let decodedCat = rawCat ? decodeURIComponent(rawCat).trim() : '';
+                let decodedNote = rawNote ? decodeURIComponent(rawNote).trim() : '';
+
+                // Extract number strictly from amount parameter
+                let normAmt = normalizeFullWidthDigits(decodedAmt);
+                let numMatch = normAmt.match(/\d+(\.\d+)?/);
+                let numAmount = numMatch ? parseFloat(numMatch[0]) : NaN;
+
+                if (isNaN(numAmount) || numAmount <= 0) {
+                    let displayVal = decodedAmt || rawAmount || '空白';
+                    showToast(`⚠️ 金額無效（收到：「${displayVal}」）。請確認捷徑中的 ?amount= 後面接的是「金額」！`, false);
+                    return;
+                }
+
+                let qCategory = '餐飲';
+                let checkCatStr = (decodedCat || '').toLowerCase();
+
+                if (CATEGORY_MAP[checkCatStr]) {
+                    qCategory = CATEGORY_MAP[checkCatStr];
+                } else if (checkCatStr) {
+                    for (let key in CATEGORY_MAP) {
+                        if (checkCatStr.includes(key.toLowerCase())) {
+                            qCategory = CATEGORY_MAP[key];
+                            break;
+                        }
+                    }
+                }
+
+                let finalNote = qCategory;
+                if (decodedNote && decodedNote.trim() !== '') {
+                    finalNote = decodedNote.trim();
+                }
+
+                const qType = rawType || 'daily';
+                const qDate = normalizeDateStr(rawDate);
+
+                // Anti-duplicate check (within 1.5s)
+                const lastTx = state.transactions[0];
+                if (lastTx && lastTx.amount === numAmount && lastTx.category === qCategory && lastTx.note === finalNote && (Date.now() - lastTx.id < 1500)) {
+                    return;
+                }
+
+                state.transactions.unshift({
+                    id: Date.now(),
+                    amount: numAmount,
+                    category: qCategory,
+                    date: qDate,
+                    type: qType,
+                    note: finalNote
+                });
+
+                setSafeLocalStorage('budget_tracker_state', state);
+
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+
+                const filterMonthEl = document.getElementById('filter-month');
+                if (filterMonthEl) {
+                    filterMonthEl.value = 'current_cycle';
+                }
+
+                renderAll();
+
+                setTimeout(() => {
+                    showToast(`✅ 捷徑記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory} - ${finalNote})`, true);
+                }, 100);
+
+            } catch (err) {
+                console.error("URL Params Parse Error:", err);
+                showToast(`⚠️ 捷徑記帳解析失敗，請重試`, false);
+            }
+        }
+
+        function getCurrentCycleRange() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            const currentDate = today.getDate();
+            const startDay = (state && state.cycleStartDay) ? Number(state.cycleStartDay) : 1;
+
+            let startDate, endDate;
+
+            if (currentDate >= startDay) {
+                startDate = new Date(currentYear, currentMonth, startDay);
+                endDate = new Date(currentYear, currentMonth + 1, startDay - 1);
+            } else {
+                startDate = new Date(currentYear, currentMonth - 1, startDay);
+                endDate = new Date(currentYear, currentMonth, startDay - 1);
+            }
+
+            return {
+                startStr: formatDateStr(startDate),
+                endStr: formatDateStr(endDate)
+            };
+        }
+
+        function showToast(message, isSuccess = true) {
+            const banner = document.getElementById('toast-banner');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+
+            if (!banner || !msgEl || !iconEl) return;
+
+            msgEl.innerText = message;
+            if (isSuccess) {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            } else {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation text-amber-400"></i>';
+            }
+
+            banner.classList.remove('-translate-y-20', 'opacity-0', 'pointer-events-none');
+            banner.classList.add('translate-y-0', 'opacity-100');
+        }
+
+        function dismissToast() {
+            const banner = document.getElementById('toast-banner');
+            if (banner) {
+                banner.classList.remove('translate-y-0', 'opacity-100');
+                banner.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function saveState() {
+            setSafeLocalStorage('budget_tracker_state', state);
+            renderAll();
+        }
+
+        function calculateBudgetMetrics() {
+            const totalFixedBudget = state.fixedExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+            const totalDailyPool = Math.max(0, state.income - totalFixedBudget - state.savingsTarget - state.investmentTarget);
+            const baseDailyBudget = Math.round(totalDailyPool / state.daysInMonth);
+
+            const todayStr = getTodayString();
+            const cycleRange = getCurrentCycleRange();
+
+            const todayDailySpent = state.transactions
+                .filter(t => t.date === todayStr && t.type === 'daily')
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            const cycleDailySpent = state.transactions
+                .filter(t => t.type === 'daily' && t.date >= cycleRange.startStr && t.date <= cycleRange.endStr)
+                .reduce((sum, t) => sum + Number(t.amount), 0);
+
+            const todayRemaining = baseDailyBudget - todayDailySpent;
+            const projectedInvestment = Math.max(0, state.income - totalFixedBudget - state.savingsTarget - cycleDailySpent);
+
+            return {
+                totalFixedBudget,
+                totalDailyPool,
+                baseDailyBudget,
+                todayDailySpent,
+                todayRemaining,
+                projectedInvestment,
+                cycleDailySpent,
+                cycleRange
+            };
+        }
+
+        function renderAll() {
+            const metrics = calculateBudgetMetrics();
+
+            const remainingEl = document.getElementById('today-remaining-amount');
+            if (remainingEl) remainingEl.innerText = `NT$ ${metrics.todayRemaining.toLocaleString()}`;
+            
+            const spentEl = document.getElementById('today-spent-amount');
+            if (spentEl) spentEl.innerText = `NT$ ${metrics.todayDailySpent.toLocaleString()}`;
+            
+            const targetEl = document.getElementById('today-target-budget');
+            if (targetEl) targetEl.innerText = `NT$ ${metrics.baseDailyBudget.toLocaleString()}`;
+
+            const progressBar = document.getElementById('today-progress-bar');
+            const statusBadge = document.getElementById('budget-status-badge');
+
+            if (progressBar && statusBadge) {
+                const spendPercentage = metrics.baseDailyBudget > 0 ? (metrics.todayDailySpent / metrics.baseDailyBudget) * 100 : 0;
+                progressBar.style.width = `${Math.min(100, spendPercentage)}%`;
+
+                if (metrics.todayRemaining >= 0) {
+                    progressBar.className = "bg-emerald-500 h-1.5 rounded-full transition-all duration-300";
+                    statusBadge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100";
+                    statusBadge.innerText = "預算充裕";
+                } else {
+                    progressBar.className = "bg-rose-500 h-1.5 rounded-full transition-all duration-300";
+                    statusBadge.className = "px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-600 border border-rose-100";
+                    statusBadge.innerText = "今日已超額";
+                }
+            }
+
+            const fixedDisplay = document.getElementById('total-fixed-display');
+            if (fixedDisplay) fixedDisplay.innerText = `NT$ ${metrics.totalFixedBudget.toLocaleString()}`;
+            
+            const fixedCountText = document.getElementById('fixed-count-text');
+            if (fixedCountText) {
+                const fixedCount = state.fixedExpenses.length;
+                fixedCountText.innerText = fixedCount > 0 ? `包含 ${fixedCount} 項固定扣款` : '尚未設定固定開銷';
+            }
+
+            const projectedDisplay = document.getElementById('projected-investment-display');
+            if (projectedDisplay) projectedDisplay.innerText = `NT$ ${metrics.projectedInvestment.toLocaleString()}`;
+            
+            const targetInvestmentText = document.getElementById('target-investment-text');
+            if (targetInvestmentText) targetInvestmentText.innerText = `NT$ ${state.investmentTarget.toLocaleString()}`;
+
+            const healthTag = document.getElementById('investment-health-tag');
+            if (healthTag) {
+                if (metrics.projectedInvestment >= state.investmentTarget) {
+                    healthTag.className = "text-emerald-600 font-semibold";
+                    healthTag.innerText = "100% 達標";
+                } else {
+                    healthTag.className = "text-amber-600 font-semibold";
+                    healthTag.innerText = "預估未達標";
+                }
+            }
+
+            const summaryIncome = document.getElementById('summary-income');
+            if (summaryIncome) summaryIncome.innerText = `NT$ ${state.income.toLocaleString()}`;
+            
+            const summaryFixed = document.getElementById('summary-fixed');
+            if (summaryFixed) summaryFixed.innerText = `NT$ ${metrics.totalFixedBudget.toLocaleString()}`;
+            
+            const summaryDailyTotal = document.getElementById('summary-daily-total');
+            if (summaryDailyTotal) summaryDailyTotal.innerText = `NT$ ${metrics.totalDailyPool.toLocaleString()}`;
+            
+            const summarySavings = document.getElementById('summary-savings');
+            if (summarySavings) summarySavings.innerText = `NT$ ${(state.savingsTarget + state.investmentTarget).toLocaleString()}`;
+
+            populateMonthFilterOptions();
+            renderTransactions();
+            renderChart(metrics);
+        }
+
+        function setTransactionType(type) {
+            document.getElementById('tx-type').value = type;
+            const dailyBtn = document.getElementById('type-btn-daily');
+            const fixedBtn = document.getElementById('type-btn-fixed');
+
+            if (type === 'daily') {
+                dailyBtn.className = "px-2.5 py-1 rounded-md bg-white text-indigo-600 shadow-xs font-semibold transition";
+                fixedBtn.className = "px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-800 transition";
+            } else {
+                fixedBtn.className = "px-2.5 py-1 rounded-md bg-white text-indigo-600 shadow-xs font-semibold transition";
+                dailyBtn.className = "px-2.5 py-1 rounded-md text-slate-500 hover:text-slate-800 transition";
+            }
+
+            updateCategoryDropdown();
+        }
+
+        function updateCategoryDropdown() {
+            const type = document.getElementById('tx-type').value;
+            const categorySelect = document.getElementById('tx-category');
+            if (!categorySelect) return;
+            categorySelect.innerHTML = '';
+
+            CATEGORIES[type].forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                categorySelect.appendChild(opt);
+            });
+        }
+
+        function handleAddTransaction(e) {
+            e.preventDefault();
+            const amount = Number(document.getElementById('tx-amount').value);
+            const category = document.getElementById('tx-category').value;
+            const type = document.getElementById('tx-type').value;
+            const inputNote = document.getElementById('tx-note').value;
+            const date = document.getElementById('tx-date').value || getTodayString();
+
+            if (!amount || amount <= 0) return;
+
+            const note = (inputNote && inputNote.trim() !== '') ? inputNote.trim() : category;
+
+            state.transactions.unshift({
+                id: Date.now(),
+                amount,
+                category,
+                date,
+                type,
+                note
+            });
+
+            saveState();
+            document.getElementById('tx-amount').value = '';
+            document.getElementById('tx-note').value = '';
+        }
+
+        function deleteTransaction(id) {
+            state.transactions = state.transactions.filter(t => t.id !== id);
+            saveState();
+        }
+
+        function populateMonthFilterOptions() {
+            const select = document.getElementById('filter-month');
+            if (!select) return;
+            const currentSelected = select.value || 'current_cycle';
+
+            select.innerHTML = '';
+
+            const cycleRange = getCurrentCycleRange();
+            const optCurrent = document.createElement('option');
+            optCurrent.value = 'current_cycle';
+            optCurrent.innerText = `本期 (${cycleRange.startStr} ~ ${cycleRange.endStr})`;
+            select.appendChild(optCurrent);
+
+            const optAll = document.createElement('option');
+            optAll.value = 'all_time';
+            optAll.innerText = '所有歷史紀錄';
+            select.appendChild(optAll);
+
+            const monthsSet = new Set();
+            state.transactions.forEach(t => {
+                if (t.date && t.date.length >= 7) {
+                    monthsSet.add(t.date.substring(0, 7));
+                }
+            });
+
+            const sortedMonths = Array.from(monthsSet).sort().reverse();
+            sortedMonths.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = `${m} 月份明細`;
+                select.appendChild(opt);
+            });
+
+            select.value = currentSelected;
+        }
+
+        function renderTransactions() {
+            const tbody = document.getElementById('transaction-list-body');
+            if (!tbody) return;
+            const filterType = document.getElementById('filter-type').value;
+            const filterMonth = document.getElementById('filter-month').value || 'current_cycle';
+
+            tbody.innerHTML = '';
+
+            const cycleRange = getCurrentCycleRange();
+
+            const filtered = state.transactions.filter(t => {
+                if (filterType !== 'all' && t.type !== filterType) return false;
+
+                if (filterMonth === 'current_cycle') {
+                    return t.date >= cycleRange.startStr && t.date <= cycleRange.endStr;
+                } else if (filterMonth === 'all_time') {
+                    return true;
+                } else {
+                    return t.date && t.date.startsWith(filterMonth);
+                }
+            });
+
+            filtered.sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400 font-medium text-xs">該區間內尚無明細紀錄</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(tx => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition";
+                
+                tr.innerHTML = `
+                    <td class="py-2 px-2 text-[11px] text-slate-400 font-mono">${tx.date}</td>
+                    <td class="py-2 px-2 font-semibold text-slate-800">${tx.category}</td>
+                    <td class="py-2 px-2 text-slate-500">${tx.note}</td>
+                    <td class="py-2 px-2 text-right font-bold text-slate-800">NT$ ${tx.amount.toLocaleString()}</td>
+                    <td class="py-2 px-2 text-center">
+                        <button onclick="deleteTransaction(${tx.id})" class="text-slate-300 hover:text-rose-500 transition p-1">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderChart(metrics) {
+            if (typeof Chart === 'undefined') return;
+            const canvas = document.getElementById('budgetChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            if (budgetChart) budgetChart.destroy();
+
+            try {
+                budgetChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['固定開銷', '日常可支配', '儲蓄與投資'],
+                        datasets: [{
+                            data: [metrics.totalFixedBudget, metrics.totalDailyPool, state.savingsTarget + state.investmentTarget],
+                            backgroundColor: ['#6366f1', '#f59e0b', '#10b981'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        cutout: '75%'
+                    }
+                });
+            } catch(e) {
+                console.warn("Chart generation error:", e);
+            }
+        }
+
+        function renderFixedExpenseRows() {
+            const container = document.getElementById('fixed-expense-rows');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let subtotal = 0;
+
+            if (tempFixedExpenses.length === 0) {
+                container.innerHTML = `<div class="text-center py-3 text-slate-400 text-xs">目前沒有固定開銷，點擊右上角新增</div>`;
+            } else {
+                tempFixedExpenses.forEach((exp, index) => {
+                    subtotal += Number(exp.amount || 0);
+                    const div = document.createElement('div');
+                    div.className = "flex gap-2 items-center bg-white p-2 rounded-xl border border-slate-200/80 shadow-2xs";
+                    div.innerHTML = `
+                        <input type="text" value="${exp.name || ''}" oninput="updateFixedExpense(${index}, 'name', this.value)" placeholder="項目名稱" class="flex-1 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <div class="relative w-28">
+                            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-bold">$</span>
+                            <input type="number" value="${exp.amount || 0}" min="0" oninput="updateFixedExpense(${index}, 'amount', Number(this.value))" placeholder="金額" class="w-full pl-5 pr-2 py-1 rounded-lg border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                        <button type="button" onclick="removeFixedExpenseRow(${index})" class="text-slate-300 hover:text-rose-500 p-1 transition">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+
+            const subtotalEl = document.getElementById('fixed-expenses-subtotal');
+            if (subtotalEl) subtotalEl.innerText = `NT$ ${subtotal.toLocaleString()}`;
+        }
+
+        function addFixedExpenseRow() {
+            tempFixedExpenses.push({ id: Date.now(), name: '', amount: 0, category: '帳單' });
+            renderFixedExpenseRows();
+        }
+
+        function removeFixedExpenseRow(index) {
+            tempFixedExpenses.splice(index, 1);
+            renderFixedExpenseRows();
+        }
+
+        function updateFixedExpense(index, field, value) {
+            tempFixedExpenses[index][field] = value;
+            let subtotal = tempFixedExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+            const subtotalEl = document.getElementById('fixed-expenses-subtotal');
+            if (subtotalEl) subtotalEl.innerText = `NT$ ${subtotal.toLocaleString()}`;
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            state.income = Number(document.getElementById('setting-income').value);
+            state.cycleStartDay = Number(document.getElementById('setting-cycle-start').value) || 1;
+            state.savingsTarget = Number(document.getElementById('setting-savings').value);
+            state.investmentTarget = Number(document.getElementById('setting-investment').value);
+            state.daysInMonth = Number(document.getElementById('setting-days').value);
+
+            state.fixedExpenses = JSON.parse(JSON.stringify(tempFixedExpenses));
+
+            toggleSettingsModal();
+            saveState();
+        }
+
+        function initApp() {
+            try {
+                const txDateInput = document.getElementById('tx-date');
+                if (txDateInput) txDateInput.value = getTodayString();
+                
+                updateCategoryDropdown();
+                renderAll();
+                handleUrlParameters();
+            } catch(err) {
+                console.error("App Initialization Error:", err);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+
+        window.addEventListener('pageshow', function() {
+            handleUrlParameters();
+        });
+
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                handleUrlParameters();
+            }
+        });
+
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'budget_tracker_state') {
+                state = getSafeLocalStorage('budget_tracker_state', DEFAULT_STATE);
+                renderAll();
+            }
+        });
+    </script>
+</body>
+</html>
