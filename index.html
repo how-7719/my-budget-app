@@ -400,11 +400,11 @@
                 <!-- Critical Failure Reasons -->
                 <div class="bg-rose-50 p-3 rounded-xl border border-rose-200/80 space-y-1.5">
                     <div class="font-bold text-rose-900 flex items-center gap-1 text-[11px]">
-                        <i class="fa-solid fa-triangle-exclamation"></i> 捷徑點擊無反應的 3 大致命原因：
+                        <i class="fa-solid fa-triangle-exclamation"></i> 捷徑點擊無反應或提示金額無效：
                     </div>
                     <ol class="list-decimal list-inside space-y-1 text-[11px] text-rose-800 font-medium leading-relaxed">
                         <li><strong>選錯動作 (最常見)</strong>：捷徑最後一步必須是 <span class="bg-rose-200 px-1 rounded font-bold">「開啟 URL」</span>！不能選成「取得 URL 內容」(背景抓取無法執行 JavaScript)。</li>
-                        <li><strong>中文未轉碼 leading to Invalid URL</strong>：iOS 捷徑中如果帶入中文（如 `category=餐飲`），捷徑會判定為無效網址而靜默失敗！請將分類改用英文代碼 (例如 `food` / `drink` / `traffic`)。</li>
+                        <li><strong>變數順序接錯</strong>：請確認 `?amount=` 後面接的是第一個要求輸入（金額），`&note=` 後面才是備註輸入！</li>
                         <li><strong>Safari 與桌面 App 資料隔離</strong>：iOS 將「加入主畫面」的圖示視為獨立 App，而捷徑會在 Safari 開啟。請直接在 Safari 中打開網頁記帳，資料才會連動！</li>
                     </ol>
                 </div>
@@ -576,7 +576,7 @@
                 category: qCategory,
                 date: getTodayString(),
                 type: 'daily',
-                note: qCategory
+                note: '自動測試便當'
             });
 
             saveState();
@@ -620,45 +620,60 @@
                     if (matchDate) rawDate = matchDate[1];
                 }
 
-                if (!rawAmount) return;
+                if (!rawAmount && !rawCat && !rawNote) return;
 
-                const normalizedAmtStr = normalizeFullWidthDigits(decodeURIComponent(rawAmount));
-                const cleanedAmount = normalizedAmtStr.replace(/[^\d.]/g, '');
-                const numAmount = parseFloat(cleanedAmount);
+                let decodedAmt = rawAmount ? decodeURIComponent(rawAmount).trim() : '';
+                let decodedCat = rawCat ? decodeURIComponent(rawCat).trim() : '';
+                let decodedNote = rawNote ? decodeURIComponent(rawNote).trim() : '';
+
+                // Extract number from amount
+                let normAmt = normalizeFullWidthDigits(decodedAmt);
+                let numMatch = normAmt.match(/\d+(\.\d+)?/);
+                let numAmount = numMatch ? parseFloat(numMatch[0]) : NaN;
+
+                // Auto-recovery: If amount has no digits, check if note or category accidentally holds the number!
+                if (isNaN(numAmount) || numAmount <= 0) {
+                    let normNote = normalizeFullWidthDigits(decodedNote);
+                    let noteNumMatch = normNote.match(/\d+(\.\d+)?/);
+                    let normCat = normalizeFullWidthDigits(decodedCat);
+                    let catNumMatch = normCat.match(/\d+(\.\d+)?/);
+
+                    if (noteNumMatch && parseFloat(noteNumMatch[0]) > 0) {
+                        numAmount = parseFloat(noteNumMatch[0]);
+                        let temp = decodedAmt;
+                        decodedAmt = decodedNote;
+                        decodedNote = temp || decodedCat || '捷徑快記';
+                    } else if (catNumMatch && parseFloat(catNumMatch[0]) > 0) {
+                        numAmount = parseFloat(catNumMatch[0]);
+                        let temp = decodedAmt;
+                        decodedAmt = decodedCat;
+                        decodedCat = temp || '餐飲';
+                    }
+                }
 
                 if (isNaN(numAmount) || numAmount <= 0) {
-                    showToast(`⚠️ 捷徑金額無效 (${rawAmount})，請確認輸入數字`, false);
+                    let displayVal = decodedAmt || rawAmount || '空白';
+                    showToast(`⚠️ 金額無效（收到：「${displayVal}」）。請檢查捷徑中 ?amount= 的神奇變數！`, false);
                     return;
                 }
 
                 let qCategory = '餐飲';
+                let checkCatStr = (decodedCat || decodedAmt).toLowerCase();
 
-                if (rawCat) {
-                    try {
-                        rawCat = decodeURIComponent(rawCat).trim();
-                    } catch(e) {
-                        rawCat = String(rawCat).trim();
-                    }
-
-                    if (CATEGORY_MAP[rawCat]) {
-                        qCategory = CATEGORY_MAP[rawCat];
-                    } else if (CATEGORY_MAP[rawCat.toLowerCase()]) {
-                        qCategory = CATEGORY_MAP[rawCat.toLowerCase()];
-                    } else if (rawCat.length > 0 && !/^\d+$/.test(rawCat)) {
-                        qCategory = rawCat.substring(0, 6);
+                if (CATEGORY_MAP[checkCatStr]) {
+                    qCategory = CATEGORY_MAP[checkCatStr];
+                } else {
+                    for (let key in CATEGORY_MAP) {
+                        if (checkCatStr.includes(key.toLowerCase())) {
+                            qCategory = CATEGORY_MAP[key];
+                            break;
+                        }
                     }
                 }
-                
+
                 let finalNote = qCategory;
-                if (rawNote && rawNote.trim() !== '') {
-                    try {
-                        let decodedNote = decodeURIComponent(rawNote).trim();
-                        if (decodedNote !== 'iOS 捷徑快記' && !/^\d+$/.test(decodedNote)) {
-                            finalNote = decodedNote;
-                        }
-                    } catch(e) {
-                        finalNote = String(rawNote).trim();
-                    }
+                if (decodedNote && decodedNote !== 'iOS 捷徑快記' && !/^\d+$/.test(decodedNote)) {
+                    finalNote = decodedNote;
                 }
 
                 const qType = rawType || 'daily';
@@ -692,7 +707,7 @@
                 renderAll();
 
                 setTimeout(() => {
-                    showToast(`✅ 捷徑記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory})`, true);
+                    showToast(`✅ 捷徑記帳成功！NT$ ${numAmount.toLocaleString()} (${qCategory} - ${finalNote})`, true);
                 }, 100);
 
             } catch (err) {
@@ -735,7 +750,7 @@
             if (isSuccess) {
                 iconEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
             } else {
-                iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation text-rose-400"></i>';
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-exclamation text-amber-400"></i>';
             }
 
             banner.classList.remove('-translate-y-20', 'opacity-0', 'pointer-events-none');
@@ -1137,7 +1152,3 @@
     </script>
 </body>
 </html>
-```
-
-### 🛠️ 請更新 GitHub：
-把上面修復好的完整程式碼貼覆蓋 GitHub 的 `index.html`，儲存後再次點擊頁面上的按鈕或觸發捷徑即可正常運作！
