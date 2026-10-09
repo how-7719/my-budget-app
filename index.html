@@ -404,7 +404,7 @@
                     </div>
                     <ol class="list-decimal list-inside space-y-1 text-[11px] text-rose-800 font-medium leading-relaxed">
                         <li><strong>選錯動作 (最常見)</strong>：捷徑最後一步必須是 <span class="bg-rose-200 px-1 rounded font-bold">「開啟 URL」</span>！不能選成「取得 URL 內容」(背景抓取無法執行 JavaScript)。</li>
-                        <li><strong>變數順序接錯</strong>：請確認 `?amount=` 後面接的是第一個要求輸入（金額），`&note=` 後面才是備註輸入！</li>
+                        <li><strong>標籤接錯</strong>：請長按第一個「要求的輸入」選擇重新命名為「金額」，第二個重命名為「備註」，確保網址中 `&category=` 後面接的是「選單結果」！</li>
                         <li><strong>Safari 與桌面 App 資料隔離</strong>：iOS 將「加入主畫面」的圖示視為獨立 App，而捷徑會在 Safari 開啟。請直接在 Safari 中打開網頁記帳，資料才會連動！</li>
                     </ol>
                 </div>
@@ -412,7 +412,7 @@
                 <div class="space-y-1.5">
                     <div class="font-bold text-slate-800 text-[11px]">最穩定的捷徑網址格式 (請複製貼入捷徑「開啟 URL」)：</div>
                     <div class="bg-slate-900 text-emerald-400 p-2.5 rounded-xl font-mono text-[10px] break-all select-all">
-                        https://how-7719.github.io/my-budget-app/?amount=🔵要求的輸入&category=🔵選單結果&note=🔵要求的輸入
+                        https://how-7719.github.io/my-budget-app/?amount=🔵金額&category=🔵選單結果&note=🔵備註
                     </div>
                 </div>
 
@@ -636,18 +636,24 @@
                     return;
                 }
 
-                // Standard English Category Matching Logic
+                // Standard Category Parsing & STRICT NUMERIC BLOCKING Logic
                 let qCategory = 'food';
                 let decodedCatClean = (decodedCat || '').trim();
                 let checkCatStr = decodedCatClean.toLowerCase();
 
-                if (decodedCatClean) {
+                // ABSOLUTE PROTECTION: If category is pure digits OR equals the amount, reject it!
+                const isPureNumber = /^\d+(\.\d+)?$/.test(decodedCatClean);
+                const isSameAsAmount = (numAmount && (decodedCatClean === String(numAmount) || decodedCatClean === String(rawAmount)));
+
+                if (decodedCatClean && !isPureNumber && !isSameAsAmount) {
                     if (CATEGORY_MAP[checkCatStr]) {
                         qCategory = CATEGORY_MAP[checkCatStr];
                     } else {
-                        // Direct match if available, or fallback to the provided string
                         qCategory = decodedCatClean;
                     }
+                } else {
+                    // Force default fallback to 'food' if category was pure numbers
+                    qCategory = 'food';
                 }
 
                 let finalNote = qCategory;
