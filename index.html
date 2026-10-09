@@ -29,11 +29,13 @@
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+        /* Firefox canvas overlay fix */
+        canvas { max-width: 100% !important; display: block; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen antialiased pb-16">
 
-    <!-- Toast Notification Banner for iOS Shortcuts -->
+    <!-- Toast Notification Banner for iOS Shortcuts / Alerts -->
     <div id="toast-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 transform -translate-y-20 opacity-0 pointer-events-none w-11/12 max-w-md">
         <div class="bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-3.5 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5">
@@ -1007,7 +1009,17 @@
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
-            if (budgetChart) budgetChart.destroy();
+            // Clear Firefox canvas buffer & destroy existing chart instance
+            if (budgetChart) {
+                try {
+                    budgetChart.destroy();
+                } catch(err) {
+                    console.warn("Chart destroy warning:", err);
+                }
+                budgetChart = null;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             try {
                 budgetChart = new Chart(ctx, {
@@ -1023,6 +1035,7 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        animation: { duration: 300 },
                         plugins: { legend: { display: false } },
                         cutout: '75%'
                     }
@@ -1116,11 +1129,13 @@
 
         window.addEventListener('pageshow', function() {
             handleUrlParameters();
+            renderAll();
         });
 
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 handleUrlParameters();
+                renderAll();
             }
         });
 
