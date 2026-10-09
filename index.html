@@ -29,13 +29,11 @@
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
-        /* Firefox canvas overlay fix */
-        canvas { max-width: 100% !important; display: block; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen antialiased pb-16">
 
-    <!-- Toast Notification Banner for iOS Shortcuts / Alerts -->
+    <!-- Toast Notification Banner for iOS Shortcuts -->
     <div id="toast-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 transform -translate-y-20 opacity-0 pointer-events-none w-11/12 max-w-md">
         <div class="bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-3.5 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5">
@@ -365,9 +363,9 @@
                     <div class="font-bold text-emerald-900 flex items-center gap-1.5">
                         <i class="fa-solid fa-vial"></i> 實時測試網址帶入功能
                     </div>
-                    <p class="text-[11px] text-emerald-800">點擊下方按鈕測試系統能否自動寫入 120 元便當：</p>
+                    <p class="text-[11px] text-emerald-800">點擊下方按鈕測試系統能否自動寫入 120 元：</p>
                     <button onclick="simulateShortcutAutoLog()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition shadow-xs flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-bolt"></i> 一鍵模擬 iOS 捷徑寫入 (NT$120)
+                        <i class="fa-solid fa-bolt"></i> 一鍵模擬 iOS 捷徑寫入 (food - NT$120)
                     </button>
                 </div>
 
@@ -382,15 +380,15 @@
                             <input type="number" id="test-gen-amount" value="85" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg font-bold">
                         </div>
                         <div>
-                            <label class="block text-slate-500 mb-0.5">測試分類</label>
+                            <label class="block text-slate-500 mb-0.5">英文分類選單</label>
                             <select id="test-gen-cat" class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg font-bold">
-                                <option value="food">food (餐飲)</option>
-                                <option value="drink">drink (飲料)</option>
-                                <option value="daily">daily (日常)</option>
-                                <option value="traffic">traffic (交通)</option>
-                                <option value="play">play (娛樂)</option>
-                                <option value="shopping">shopping (購物)</option>
-                                <option value="other">other (其他)</option>
+                                <option value="food">food</option>
+                                <option value="drink">drink</option>
+                                <option value="traffic">traffic</option>
+                                <option value="daily">daily</option>
+                                <option value="play">play</option>
+                                <option value="shopping">shopping</option>
+                                <option value="other">other</option>
                             </select>
                         </div>
                     </div>
@@ -414,7 +412,7 @@
                 <div class="space-y-1.5">
                     <div class="font-bold text-slate-800 text-[11px]">最穩定的捷徑網址格式 (請複製貼入捷徑「開啟 URL」)：</div>
                     <div class="bg-slate-900 text-emerald-400 p-2.5 rounded-xl font-mono text-[10px] break-all select-all">
-                        https://how-7719.github.io/my-budget-app/?amount=🔵要求的輸入&category=food&note=🔵要求的輸入
+                        https://how-7719.github.io/my-budget-app/?amount=🔵要求的輸入&category=🔵選單結果&note=🔵要求的輸入
                     </div>
                 </div>
 
@@ -460,50 +458,49 @@
             return getTodayString();
         }
 
+        // Standard English Category Mapping Dictionary
         const CATEGORY_MAP = {
-            'food': '餐飲',
-            'drink': '飲料',
-            'daily': '日常',
-            'traffic': '交通',
-            'play': '娛樂',
-            'shopping': '購物',
-            'other': '其他',
-            'breakfast': '餐飲',
-            'lunch': '餐飲',
-            'dinner': '餐飲',
-            'coffee': '飲料',
-            '餐飲外食': '餐飲',
-            '餐飲': '餐飲',
-            '飲料零食': '飲料',
-            '飲料': '飲料',
-            '日常用品': '日常',
-            '日常': '日常',
-            '交通交通': '交通',
-            '交通': '交通',
-            '娛樂社交': '娛樂',
-            '娛樂': '娛樂',
-            '購物治裝': '購物',
-            '購物': '購物',
-            '其他變動': '其他',
-            '其他': '其他'
+            'food': 'food',
+            'drink': 'drink',
+            'traffic': 'traffic',
+            'daily': 'daily',
+            'play': 'play',
+            'shopping': 'shopping',
+            'other': 'other',
+
+            // Chinese fallbacks mapped to standard English categories
+            '餐飲': 'food', '外食': 'food', '餐飲外食': 'food', '吃': 'food', '早餐': 'food', '午餐': 'food', '晚餐': 'food',
+            '飲料': 'drink', '手搖': 'drink', '咖啡': 'drink',
+            '交通': 'traffic', '車資': 'traffic', '加油': 'traffic', '捷運': 'traffic', '公車': 'traffic',
+            '日常': 'daily', '日用品': 'daily', '生活': 'daily', '雜貨': 'daily',
+            '娛樂': 'play', '遊戲': 'play', '電影': 'play', '玩': 'play',
+            '購物': 'shopping', '治裝': 'shopping', '買東西': 'shopping', '網購': 'shopping',
+            '其他': 'other', '其它': 'other',
+
+            // Fixed Expenses
+            'housing': 'Housing', 'rent': 'Housing', '住房': 'Housing',
+            'utilities': 'Utilities', 'utility': 'Utilities', '水電': 'Utilities',
+            'phone': 'Phone', 'telecom': 'Phone', '電信': 'Phone',
+            'subscription': 'Subscription', '訂閱': 'Subscription',
+            'insurance': 'Insurance', '保險': 'Insurance'
         };
 
         const DEFAULT_STATE = {
             income: 25000,
             cycleStartDay: 1,
             fixedExpenses: [
-                { id: 1, name: '宿舍/租金', amount: 7000, category: '住房' },
-                { id: 2, name: '水電瓦斯網路', amount: 1000, category: '水電' },
-                { id: 3, name: '電話費/電信月租', amount: 499, category: '電信' },
-                { id: 4, name: 'TPASS/交通定期票', amount: 1200, category: '交通' }
+                { id: 1, name: '宿舍/租金', amount: 7000, category: 'Housing' },
+                { id: 2, name: '水電瓦斯網路', amount: 1000, category: 'Utilities' },
+                { id: 3, name: '電話費/電信月租', amount: 499, category: 'Phone' },
+                { id: 4, name: 'TPASS/交通定期票', amount: 1200, category: 'Traffic' }
             ],
             savingsTarget: 2000,
             investmentTarget: 4000,
             daysInMonth: 30,
             transactions: [
-                { id: 101, date: getTodayString(), amount: 110, category: '餐飲', type: 'daily', note: '午餐排骨飯' },
-                { id: 102, date: getTodayString(), amount: 60, category: '飲料', type: 'daily', note: '拿鐵咖啡' },
-                { id: 103, date: getTodayString(), amount: 499, category: '電信', type: 'fixed', note: '電信帳單' }
+                { id: 101, date: getTodayString(), amount: 110, category: 'food', type: 'daily', note: '午餐排骨飯' },
+                { id: 102, date: getTodayString(), amount: 60, category: 'drink', type: 'daily', note: '拿鐵咖啡' },
+                { id: 103, date: getTodayString(), amount: 499, category: 'Phone', type: 'fixed', note: '電信帳單' }
             ]
         };
 
@@ -532,8 +529,8 @@
         let budgetChart = null;
 
         const CATEGORIES = {
-            daily: ['餐飲', '飲料', '日常', '交通', '娛樂', '購物', '其他'],
-            fixed: ['住房', '水電', '電信', '交通', '訂閱', '保險']
+            daily: ['food', 'drink', 'traffic', 'daily', 'play', 'shopping', 'other'],
+            fixed: ['Housing', 'Utilities', 'Phone', 'Traffic', 'Subscription', 'Insurance']
         };
 
         function toggleIosGuideModal() {
@@ -564,14 +561,14 @@
 
         function testGeneratedUrl() {
             const amt = document.getElementById('test-gen-amount').value || '85';
-            const cat = document.getElementById('test-gen-cat').value || 'food';
-            const testUrl = `${window.location.origin}${window.location.pathname}?amount=${amt}&category=${cat}&note=捷徑測試`;
+            const cat = document.getElementById('test-gen-cat').value || 'drink';
+            const testUrl = `${window.location.origin}${window.location.pathname}?amount=${amt}&category=${encodeURIComponent(cat)}&note=English category test`;
             window.location.href = testUrl;
         }
 
         function simulateShortcutAutoLog() {
             const numAmount = 120;
-            const qCategory = '餐飲';
+            const qCategory = 'food';
             state.transactions.unshift({
                 id: Date.now(),
                 amount: numAmount,
@@ -639,17 +636,17 @@
                     return;
                 }
 
-                let qCategory = '餐飲';
-                let checkCatStr = (decodedCat || '').toLowerCase();
+                // Standard English Category Matching Logic
+                let qCategory = 'food';
+                let decodedCatClean = (decodedCat || '').trim();
+                let checkCatStr = decodedCatClean.toLowerCase();
 
-                if (CATEGORY_MAP[checkCatStr]) {
-                    qCategory = CATEGORY_MAP[checkCatStr];
-                } else if (checkCatStr) {
-                    for (let key in CATEGORY_MAP) {
-                        if (checkCatStr.includes(key.toLowerCase())) {
-                            qCategory = CATEGORY_MAP[key];
-                            break;
-                        }
+                if (decodedCatClean) {
+                    if (CATEGORY_MAP[checkCatStr]) {
+                        qCategory = CATEGORY_MAP[checkCatStr];
+                    } else {
+                        // Direct match if available, or fallback to the provided string
+                        qCategory = decodedCatClean;
                     }
                 }
 
@@ -989,7 +986,7 @@
                 
                 tr.innerHTML = `
                     <td class="py-2 px-2 text-[11px] text-slate-400 font-mono">${tx.date}</td>
-                    <td class="py-2 px-2 font-semibold text-slate-800">${tx.category}</td>
+                    <td class="py-2 px-2 font-semibold text-slate-800 font-mono">${tx.category}</td>
                     <td class="py-2 px-2 text-slate-500">${tx.note}</td>
                     <td class="py-2 px-2 text-right font-bold text-slate-800">NT$ ${tx.amount.toLocaleString()}</td>
                     <td class="py-2 px-2 text-center">
@@ -1009,17 +1006,7 @@
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
-            // Clear Firefox canvas buffer & destroy existing chart instance
-            if (budgetChart) {
-                try {
-                    budgetChart.destroy();
-                } catch(err) {
-                    console.warn("Chart destroy warning:", err);
-                }
-                budgetChart = null;
-            }
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (budgetChart) budgetChart.destroy();
 
             try {
                 budgetChart = new Chart(ctx, {
@@ -1035,7 +1022,6 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        animation: { duration: 300 },
                         plugins: { legend: { display: false } },
                         cutout: '75%'
                     }
@@ -1078,7 +1064,7 @@
         }
 
         function addFixedExpenseRow() {
-            tempFixedExpenses.push({ id: Date.now(), name: '', amount: 0, category: '帳單' });
+            tempFixedExpenses.push({ id: Date.now(), name: '', amount: 0, category: 'Housing' });
             renderFixedExpenseRows();
         }
 
@@ -1129,13 +1115,11 @@
 
         window.addEventListener('pageshow', function() {
             handleUrlParameters();
-            renderAll();
         });
 
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
                 handleUrlParameters();
-                renderAll();
             }
         });
 
